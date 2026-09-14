@@ -2,58 +2,101 @@
 //  ContentView.swift
 //  GestionTutorial
 //
-//  Created by Marcos on 13/09/2026.
+//  Ventana raíz: barra lateral Liquid Glass + contenido según sección.
 //
 
 import SwiftUI
 import SwiftData
 
+enum Seccion: String, CaseIterable, Identifiable {
+    case alumnos = "Alumnos"
+    case tutorias = "Tutorías"
+    case necesidades = "Necesidades"
+
+    var id: String { rawValue }
+
+    var simbolo: String {
+        switch self {
+        case .alumnos:     return "person.2.fill"
+        case .tutorias:    return "calendar.badge.clock"
+        case .necesidades: return "cross.case.fill"
+        }
+    }
+}
+
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @State private var seccion: Seccion = .alumnos
+    @State private var alumnoSeleccionado: Alumno?
+    @State private var tutoriaSeleccionada: Tutoria?
+    @State private var necesidadSeleccionada: NecesidadEspecial?
 
     var body: some View {
         NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
+            // Barra lateral de secciones
+            List(Seccion.allCases, selection: $seccion) { seccion in
+                Label(seccion.rawValue, systemImage: seccion.simbolo)
+                    .tag(seccion)
             }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-            .toolbar {
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
+            .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 260)
+            .navigationTitle("1SMX-A")
+        } content: {
+            // Columna central: lista según sección
+            switch seccion {
+            case .alumnos:
+                AlumnosListView(seleccion: $alumnoSeleccionado)
+            case .tutorias:
+                TutoriasListView(seleccion: $tutoriaSeleccionada)
+            case .necesidades:
+                NecesidadesListView(seleccion: $necesidadSeleccionada)
             }
         } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            // Columna de detalle
+            switch seccion {
+            case .alumnos:
+                if let alumno = alumnoSeleccionado {
+                    AlumnoDetailView(alumno: alumno)
+                        .id(alumno.persistentModelID)
+                } else {
+                    PlaceholderDetalle(texto: "Selecciona un alumno", simbolo: "person.crop.circle")
+                }
+            case .tutorias:
+                if let tutoria = tutoriaSeleccionada {
+                    TutoriaDetailView(tutoria: tutoria)
+                        .id(tutoria.persistentModelID)
+                        .toolbar {
+                            ToolbarItem(placement: .navigation) {
+                                Button {
+                                    tutoriaSeleccionada = nil
+                                } label: {
+                                    Label("Calendario", systemImage: "chevron.left")
+                                }
+                            }
+                        }
+                } else {
+                    CalendarioTutoriasView(seleccion: $tutoriaSeleccionada)
+                }
+            case .necesidades:
+                if let necesidad = necesidadSeleccionada {
+                    NecesidadDetailView(necesidad: necesidad)
+                        .id(necesidad.persistentModelID)
+                } else {
+                    PlaceholderDetalle(texto: "Selecciona una necesidad", simbolo: "cross.case")
+                }
             }
         }
     }
 }
 
+struct PlaceholderDetalle: View {
+    var texto: String
+    var simbolo: String
+
+    var body: some View {
+        ContentUnavailableView(texto, systemImage: simbolo)
+    }
+}
+
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: [Alumno.self, Tutoria.self, NecesidadEspecial.self], inMemory: true)
 }

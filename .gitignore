@@ -1,0 +1,15 @@
+# Datos sensibles / de ejemplo (nombres y DNIs de menores) — NUNCA subir
+test-data/
+
+# Xcode / build
+DerivedData/
+build/
+*.xcuserstate
+**/xcuserdata/
+.swiftpm/
+
+# macOS
+.DS_Store
+
+# Exports de icono (redundantes con icono.icon)
+icono Exports/

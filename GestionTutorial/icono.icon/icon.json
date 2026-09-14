@@ -1,0 +1,58 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "display-p3:0.55721,0.72697,0.92609,1.00000",
+      "display-p3:0.09922,0.11380,0.84945,1.00000"
+    ]
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "icono-tutorias-contraste.svg",
+          "name" : "icono-tutorias-contraste",
+          "position" : {
+            "scale" : 4.99,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "blend-mode" : "overlay",
+          "fill" : "none",
+          "glass" : true,
+          "hidden" : true,
+          "image-name" : "admin-ajax.png",
+          "name" : "admin-ajax",
+          "opacity" : 0.32,
+          "position" : {
+            "scale" : 1.77,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.3
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

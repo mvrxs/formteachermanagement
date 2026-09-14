@@ -1,0 +1,176 @@
+//
+//  AjustesView.swift
+//  GestionTutorial
+//
+//  Ventana de preferencias (⌘,). Escena `Settings` en la app.
+//
+
+import SwiftUI
+
+struct AjustesView: View {
+    var body: some View {
+        TabView {
+            AjustesGeneral()
+                .tabItem { Label("General", systemImage: "gearshape") }
+            AjustesCalendario()
+                .tabItem { Label("Calendario", systemImage: "calendar") }
+            AjustesCurso()
+                .tabItem { Label("Curso", systemImage: "graduationcap") }
+            AjustesAcercaDe()
+                .tabItem { Label("Acerca de", systemImage: "info.circle") }
+        }
+        .frame(width: 460, height: 340)
+    }
+}
+
+// MARK: - Acerca de
+
+private struct AjustesAcercaDe: View {
+    private var version: String {
+        let corta = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(corta) (\(build))"
+    }
+
+    private var nombreApp: String {
+        (Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String)
+            ?? (Bundle.main.infoDictionary?["CFBundleName"] as? String)
+            ?? "GestionTutorial"
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 96, height: 96)
+
+            Text(nombreApp)
+                .font(.title2.bold())
+
+            HStack(spacing: 6) {
+                Text("Versión \(version)")
+                Text("ALPHA")
+                    .font(.caption2.bold())
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(.orange.opacity(0.2), in: .capsule)
+                    .foregroundStyle(.orange)
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+
+            Text("Hecho por MVRX Studio\u{00AE}")
+                .font(.subheadline)
+
+            Divider().padding(.horizontal, 40)
+
+            VStack(spacing: 4) {
+                Text("Repositorio")
+                    .font(.caption).foregroundStyle(.secondary)
+                Link("github.com/mvrxs/formteachermanagement",
+                     destination: URL(string: "https://github.com/mvrxs/formteachermanagement")!)
+                    .font(.callout)
+            }
+
+            Text("Seguimiento tutorial de FP · Datos locales, sin nube.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+    }
+}
+
+// MARK: - General
+
+private struct AjustesGeneral: View {
+    @AppStorage(ClaveAjuste.apariencia) private var apariencia = Apariencia.sistema.rawValue
+    @AppStorage(ClaveAjuste.modalidadDefecto) private var modalidad = Modalidad.presencial.rawValue
+
+    var body: some View {
+        Form {
+            Picker("Apariencia", selection: $apariencia) {
+                ForEach(Apariencia.allCases) { Text($0.rawValue).tag($0.rawValue) }
+            }
+            Picker("Modalidad por defecto de tutoría", selection: $modalidad) {
+                ForEach(Modalidad.allCases) { Text($0.rawValue).tag($0.rawValue) }
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+}
+
+// MARK: - Calendario
+
+private struct AjustesCalendario: View {
+    @AppStorage(ClaveAjuste.autoSyncNuevas) private var autoSync = false
+    @AppStorage(ClaveAjuste.duracionEventoMin) private var duracion = 60
+    @AppStorage(ClaveAjuste.recordatorioMin) private var recordatorio = -1
+
+    private let duraciones = [30, 45, 60, 90, 120]
+    private let recordatorios = [-1, 0, 5, 10, 15, 30, 60]
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Sincronizar automáticamente las tutorías nuevas", isOn: $autoSync)
+            } footer: {
+                Text("Al crear una tutoría se añadirá sola a tu Calendario de macOS. Si lo dejas apagado, puedes sincronizar cada una desde su ficha.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section {
+                Picker("Duración del evento", selection: $duracion) {
+                    ForEach(duraciones, id: \.self) { Text("\($0) min").tag($0) }
+                }
+                Picker("Recordatorio", selection: $recordatorio) {
+                    ForEach(recordatorios, id: \.self) { min in
+                        Text(etiquetaRecordatorio(min)).tag(min)
+                    }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
+    private func etiquetaRecordatorio(_ min: Int) -> String {
+        switch min {
+        case ..<0:  return "Ninguno"
+        case 0:     return "A la hora del evento"
+        default:    return "\(min) min antes"
+        }
+    }
+}
+
+// MARK: - Curso académico
+
+private struct AjustesCurso: View {
+    @AppStorage(ClaveAjuste.cursoInicio) private var inicioRaw = Date().timeIntervalSinceReferenceDate
+    @AppStorage(ClaveAjuste.cursoFin) private var finRaw = Date().timeIntervalSinceReferenceDate
+
+    var body: some View {
+        Form {
+            Section {
+                DatePicker("Inicio del curso", selection: bindingFecha($inicioRaw), displayedComponents: .date)
+                DatePicker("Fin del curso", selection: bindingFecha($finRaw), displayedComponents: .date)
+                    .environment(\.locale, Locale(identifier: "es_ES"))
+            } footer: {
+                Text("Rango usado para marcar qué alumnos cumplen 18 años durante el curso.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .environment(\.locale, Locale(identifier: "es_ES"))
+        .padding()
+    }
+
+    private func bindingFecha(_ raw: Binding<Double>) -> Binding<Date> {
+        Binding(
+            get: { Date(timeIntervalSinceReferenceDate: raw.wrappedValue) },
+            set: { raw.wrappedValue = $0.timeIntervalSinceReferenceDate }
+        )
+    }
+}
