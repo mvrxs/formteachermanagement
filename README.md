@@ -33,6 +33,20 @@ xcodebuild -project GestionTutorial.xcodeproj -scheme GestionTutorial -destinati
 
 O abre `GestionTutorial.xcodeproj` en Xcode y ejecuta (⌘R).
 
+## Generar instalador (.dmg) para pruebas
+
+```bash
+./build-dmg.sh
+```
+
+Genera `Form Teacher Manager.dmg` (Release, firma **ad-hoc**, sin notarizar). Para repartir en alpha. El receptor, la primera vez, debe quitar la cuarentena:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/GestionTutorial.app"
+```
+
+O bien: clic derecho sobre la app → **Abrir**, o Ajustes del Sistema › Privacidad y seguridad → «Abrir de todos modos». Para distribución sin avisos hace falta Apple Developer ID + notarización.
+
 ## Autoría
 
 Hecho por **MVRX Studio®**.

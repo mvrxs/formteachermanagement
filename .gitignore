@@ -13,3 +13,8 @@ build/
 
 # Exports de icono (redundantes con icono.icon)
 icono Exports/
+
+# Artefactos de distribución
+build_release/
+dmg_stage/
+*.dmg
