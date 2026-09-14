@@ -82,7 +82,7 @@ struct TutoriasListView: View {
     }
 
     private func nuevaTutoria(para alumno: Alumno) {
-        let t = Tutoria(modalidad: Ajustes.modalidadDefecto, alumno: alumno)
+        let t = Tutoria(modalidad: .presencial, alumno: alumno)
         modelContext.insert(t)
         seleccion = t
         if Ajustes.autoSyncNuevas {

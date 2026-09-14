@@ -1,6 +1,6 @@
 # Form Teacher Management
 
-App de macOS para el **seguimiento tutorial** de un grupo de FP por parte del profesor-tutor: fichas de alumnos, registro de tutorías y necesidades educativas especiales.
+**Tu gestor de confianza.** App de macOS para el seguimiento tutorial de un grupo de FP por parte del profesor-tutor: fichas de alumnos, registro de tutorías y necesidades educativas especiales. Datos locales, sin nube.
 
 > ⚠️ **Estado: ALPHA.** En desarrollo activo, sin garantías de estabilidad.
 

@@ -15,7 +15,38 @@ enum ClaveAjuste {
     static let cursoInicio      = "curso.inicio"
     static let cursoFin         = "curso.fin"
     static let apariencia       = "apariencia"
-    static let modalidadDefecto = "tutoria.modalidadDefecto"
+    static let idioma           = "idioma"
+}
+
+enum Idioma: String, CaseIterable, Identifiable {
+    case sistema = "sistema"
+    case catalan = "ca"
+    case espanol = "es"
+    case ingles = "en"
+    case aleman = "de"
+    case frances = "fr"
+
+    var id: String { rawValue }
+
+    var nombre: String {
+        switch self {
+        case .sistema: return "Sistema"
+        case .catalan: return "Català"
+        case .espanol: return "Español"
+        case .ingles:  return "English"
+        case .aleman:  return "Deutsch"
+        case .frances: return "Français"
+        }
+    }
+
+    /// Código de idioma, o `nil` para "seguir al sistema".
+    var codigo: String? { self == .sistema ? nil : rawValue }
+
+    /// Locale correspondiente (nil = sistema).
+    var locale: Locale? { codigo.map { Locale(identifier: $0) } }
+
+    /// Orden en el selector: Sistema, y Català como primera opción de idioma.
+    static var ordenados: [Idioma] { [.sistema, .catalan, .espanol, .ingles, .aleman, .frances] }
 }
 
 enum Apariencia: String, CaseIterable, Identifiable {
@@ -51,7 +82,7 @@ enum Ajustes {
             ClaveAjuste.cursoInicio: inicio.timeIntervalSinceReferenceDate,
             ClaveAjuste.cursoFin: fin.timeIntervalSinceReferenceDate,
             ClaveAjuste.apariencia: Apariencia.sistema.rawValue,
-            ClaveAjuste.modalidadDefecto: Modalidad.presencial.rawValue,
+            ClaveAjuste.idioma: Idioma.sistema.rawValue,
         ])
     }
 
@@ -60,7 +91,6 @@ enum Ajustes {
     static var recordatorioMinutos: Int { d.integer(forKey: ClaveAjuste.recordatorioMin) }
     static var cursoInicio: Date { Date(timeIntervalSinceReferenceDate: d.double(forKey: ClaveAjuste.cursoInicio)) }
     static var cursoFin: Date { Date(timeIntervalSinceReferenceDate: d.double(forKey: ClaveAjuste.cursoFin)) }
-    static var modalidadDefecto: Modalidad {
-        Modalidad(rawValue: d.string(forKey: ClaveAjuste.modalidadDefecto) ?? "") ?? .presencial
-    }
+
+    static var idioma: Idioma { Idioma(rawValue: d.string(forKey: ClaveAjuste.idioma) ?? "") ?? .sistema }
 }

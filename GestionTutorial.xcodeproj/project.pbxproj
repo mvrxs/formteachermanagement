@@ -86,11 +86,15 @@
 				};
 			};
 			buildConfigurationList = 8D4AA40E305705F300FD91F3 /* Build configuration list for PBXProject "GestionTutorial" */;
-			developmentRegion = en;
+			developmentRegion = es;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				es,
+				ca,
+				de,
+				fr,
 			);
 			mainGroup = 8D4AA40A305705F300FD91F3;
 			minimizedProjectReferenceProxies = 1;

@@ -71,7 +71,7 @@ private struct AjustesAcercaDe: View {
                     .font(.callout)
             }
 
-            Text("Seguimiento tutorial de FP · Datos locales, sin nube.")
+            Text("Tu gestor de confianza · Datos locales, sin nube.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -87,19 +87,35 @@ private struct AjustesAcercaDe: View {
 
 private struct AjustesGeneral: View {
     @AppStorage(ClaveAjuste.apariencia) private var apariencia = Apariencia.sistema.rawValue
-    @AppStorage(ClaveAjuste.modalidadDefecto) private var modalidad = Modalidad.presencial.rawValue
+    @AppStorage(ClaveAjuste.idioma) private var idioma = Idioma.sistema.rawValue
 
     var body: some View {
         Form {
             Picker("Apariencia", selection: $apariencia) {
                 ForEach(Apariencia.allCases) { Text($0.rawValue).tag($0.rawValue) }
             }
-            Picker("Modalidad por defecto de tutoría", selection: $modalidad) {
-                ForEach(Modalidad.allCases) { Text($0.rawValue).tag($0.rawValue) }
+            Section {
+                Picker("Idioma", selection: $idioma) {
+                    ForEach(Idioma.ordenados) { Text($0.nombre).tag($0.rawValue) }
+                }
+                .onChange(of: idioma) { _, nuevo in aplicarIdioma(nuevo) }
+            } footer: {
+                Text("Cambia el idioma de la app. Algunos textos del sistema pueden requerir reiniciar la app.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    /// Escribe la preferencia de idioma a nivel de sistema (AppleLanguages).
+    private func aplicarIdioma(_ raw: String) {
+        let idioma = Idioma(rawValue: raw) ?? .sistema
+        if let codigo = idioma.codigo {
+            UserDefaults.standard.set([codigo], forKey: "AppleLanguages")
+        } else {
+            UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+        }
     }
 }
 

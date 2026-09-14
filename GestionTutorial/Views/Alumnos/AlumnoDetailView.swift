@@ -360,7 +360,7 @@ struct AlumnoDetailView: View {
                 }
             }
             Button {
-                let t = Tutoria(modalidad: Ajustes.modalidadDefecto, alumno: alumno)
+                let t = Tutoria(modalidad: .presencial, alumno: alumno)
                 modelContext.insert(t)
                 tutoriaEnEdicion = t
                 if Ajustes.autoSyncNuevas {
