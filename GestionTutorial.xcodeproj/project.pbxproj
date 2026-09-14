@@ -259,6 +259,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Form Teacher Manager";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Para sincronizar las tutorias con tu Calendario de macOS.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Para sincronizar las tutorias con tu Calendario de macOS.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -291,6 +292,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Form Teacher Manager";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Para sincronizar las tutorias con tu Calendario de macOS.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Para sincronizar las tutorias con tu Calendario de macOS.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
