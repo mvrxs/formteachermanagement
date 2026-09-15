@@ -8,6 +8,8 @@
 
 import SwiftUI
 import SwiftData
+import AppKit
+import UniformTypeIdentifiers
 
 extension EstadoEdad {
     /// Color de identificación del estado en la interfaz.
@@ -34,6 +36,7 @@ struct AlumnosListView: View {
     @State private var soloAutorizacionPendiente = false
     @State private var soloInglesConvalidado = false
     @State private var soloEmancipados = false
+    @State private var errorExportar: String?
 
     /// Filtrado solo por búsqueda (para contar por estado en el menú).
     private var buscados: [Alumno] {
@@ -123,6 +126,13 @@ struct AlumnosListView: View {
                 }
             }
             ToolbarItem {
+                Button(action: exportarPowerPoint) {
+                    Label("Exportar PowerPoint", systemImage: "rectangle.on.rectangle.angled")
+                }
+                .disabled(filtrados.isEmpty)
+                .help("Exporta los alumnos visibles a una presentación de PowerPoint")
+            }
+            ToolbarItem {
                 Button(action: nuevoAlumno) {
                     Label("Nuevo alumno", systemImage: "plus")
                 }
@@ -130,6 +140,11 @@ struct AlumnosListView: View {
         }
         .sheet(isPresented: $mostrarImportador) {
             ImportadorCSVView()
+        }
+        .alert("No se pudo exportar", isPresented: .constant(errorExportar != nil)) {
+            Button("OK") { errorExportar = nil }
+        } message: {
+            Text(errorExportar ?? "")
         }
         .overlay {
             if alumnos.isEmpty {
@@ -166,6 +181,37 @@ struct AlumnosListView: View {
                     Label("Eliminar alumno", systemImage: "trash")
                 }
             }
+    }
+
+    // MARK: - Exportación a PowerPoint
+
+    private func exportarPowerPoint() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "pptx") ?? .presentation]
+        panel.nameFieldStringValue = "Grupo 1SMX-A.pptx"
+        panel.canCreateDirectories = true
+        panel.title = "Exportar a PowerPoint"
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        let datos = ExportadorPowerPoint.generar(
+            alumnos: filtrados,
+            grupo: "1SMX-A",
+            logoPNG: logoMonlauPNG()
+        )
+        do {
+            try datos.write(to: url)
+        } catch {
+            errorExportar = error.localizedDescription
+        }
+    }
+
+    /// Logo de la escuela desde el catálogo de assets, re-codificado a PNG para el .pptx.
+    private func logoMonlauPNG() -> Data? {
+        guard let img = NSImage(named: "LogoMonlau"),
+              let tiff = img.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff) else { return nil }
+        return rep.representation(using: .png, properties: [:])
     }
 
     private func nuevoAlumno() {

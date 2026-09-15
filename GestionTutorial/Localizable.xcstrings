@@ -1360,6 +1360,12 @@
         }
       }
     },
+    "Exporta los alumnos visibles a una presentación de PowerPoint" : {
+
+    },
+    "Exportar PowerPoint" : {
+
+    },
     "Fecha" : {
       "localizations" : {
         "ca" : {
@@ -2159,6 +2165,9 @@
           }
         }
       }
+    },
+    "No se pudo exportar" : {
+
     },
     "No se pudo leer el archivo" : {
       "localizations" : {
