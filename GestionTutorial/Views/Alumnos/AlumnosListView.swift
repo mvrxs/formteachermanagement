@@ -126,11 +126,28 @@ struct AlumnosListView: View {
                 }
             }
             ToolbarItem {
-                Button(action: exportarPowerPoint) {
-                    Label("Exportar PowerPoint", systemImage: "rectangle.on.rectangle.angled")
+                Menu {
+                    Button {
+                        exportarPowerPoint()
+                    } label: {
+                        Label("PowerPoint (fichas)", systemImage: "rectangle.on.rectangle.angled")
+                    }
+                    Divider()
+                    Button {
+                        exportarTabla(.csv)
+                    } label: {
+                        Label("CSV", systemImage: "tablecells")
+                    }
+                    Button {
+                        exportarTabla(.excel)
+                    } label: {
+                        Label("Excel (.xlsx)", systemImage: "tablecells.badge.ellipsis")
+                    }
+                } label: {
+                    Label("Exportar", systemImage: "square.and.arrow.up")
                 }
                 .disabled(filtrados.isEmpty)
-                .help("Exporta los alumnos visibles a una presentación de PowerPoint")
+                .help("Exporta los alumnos visibles")
             }
             ToolbarItem {
                 Button(action: nuevoAlumno) {
@@ -199,6 +216,31 @@ struct AlumnosListView: View {
             grupo: "1SMX-A",
             logoPNG: logoMonlauPNG()
         )
+        do {
+            try datos.write(to: url)
+        } catch {
+            errorExportar = error.localizedDescription
+        }
+    }
+
+    private enum FormatoTabla {
+        case csv, excel
+        var ext: String { self == .csv ? "csv" : "xlsx" }
+        var tipo: UTType { self == .csv ? .commaSeparatedText : (UTType(filenameExtension: "xlsx") ?? .spreadsheet) }
+    }
+
+    private func exportarTabla(_ formato: FormatoTabla) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [formato.tipo]
+        panel.nameFieldStringValue = "Alumnos 1SMX-A.\(formato.ext)"
+        panel.canCreateDirectories = true
+        panel.title = formato == .csv ? "Exportar a CSV" : "Exportar a Excel"
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        let datos = formato == .csv
+            ? ExportadorTabla.csv(alumnos: filtrados)
+            : ExportadorTabla.xlsx(alumnos: filtrados)
         do {
             try datos.write(to: url)
         } catch {
