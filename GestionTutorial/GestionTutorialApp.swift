@@ -13,6 +13,8 @@ struct GestionTutorialApp: App {
     @AppStorage(ClaveAjuste.apariencia) private var apariencia = Apariencia.sistema.rawValue
     @AppStorage(ClaveAjuste.idioma) private var idioma = Idioma.sistema.rawValue
 
+    @State private var gestorActualizaciones = GestorActualizaciones()
+
     init() {
         Ajustes.registrarPorDefecto()
     }
@@ -46,12 +48,25 @@ struct GestionTutorialApp: App {
             ContentView()
                 .preferredColorScheme(Apariencia(rawValue: apariencia)?.colorScheme)
                 .environment(\.locale, localeSeleccionado ?? Locale.autoupdatingCurrent)
+                .environment(gestorActualizaciones)
+                .alertasActualizacion(gestorActualizaciones)
+                .task { gestorActualizaciones.buscarAlArrancar() }
         }
         .modelContainer(sharedModelContainer)
+        .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Buscar actualizaciones…") {
+                    gestorActualizaciones.buscarManual()
+                }
+                .disabled(gestorActualizaciones.comprobando)
+            }
+        }
 
         Settings {
             AjustesView()
                 .environment(\.locale, localeSeleccionado ?? Locale.autoupdatingCurrent)
+                .environment(gestorActualizaciones)
+                .alertasActualizacion(gestorActualizaciones)
         }
         .modelContainer(sharedModelContainer)
     }

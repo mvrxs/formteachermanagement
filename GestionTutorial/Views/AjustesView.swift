@@ -26,6 +26,8 @@ struct AjustesView: View {
 // MARK: - Acerca de
 
 private struct AjustesAcercaDe: View {
+    @Environment(GestorActualizaciones.self) private var gestor
+
     private var version: String {
         let corta = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
@@ -57,6 +59,20 @@ private struct AjustesAcercaDe: View {
             }
             .font(.subheadline)
             .foregroundStyle(.secondary)
+
+            Button {
+                gestor.buscarManual()
+            } label: {
+                if gestor.comprobando {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text("Comprobando…")
+                    }
+                } else {
+                    Text("Buscar actualizaciones")
+                }
+            }
+            .disabled(gestor.comprobando)
 
             Text("Hecho por MVRX Studio\u{00AE}")
                 .font(.subheadline)
