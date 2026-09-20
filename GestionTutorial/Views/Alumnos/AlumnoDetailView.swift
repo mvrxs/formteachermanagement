@@ -215,7 +215,7 @@ struct AlumnoDetailView: View {
                 .toggleStyle(.switch)
             if alumno.fechaNacimiento != nil {
                 DatePicker("Fecha de nacimiento", selection: fechaNacimientoBinding, displayedComponents: .date)
-                    .datePickerStyle(.field)
+                    .datePickerStyle(.compact)
                     .environment(\.locale, Locale(identifier: "es_ES"))
             }
         }
@@ -266,7 +266,9 @@ struct AlumnoDetailView: View {
                 Toggle("No se hablan", isOn: $alumno.padresNoSeHablan)
                 Toggle("Emancipado", isOn: $alumno.emancipado)
             }
+            #if os(macOS)
             .toggleStyle(.checkbox)
+            #endif
         }
     }
 

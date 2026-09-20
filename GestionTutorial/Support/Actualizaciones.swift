@@ -8,7 +8,6 @@
 //
 
 import SwiftUI
-import AppKit
 
 @Observable
 @MainActor
@@ -64,7 +63,7 @@ final class GestorActualizaciones {
     }
 
     func abrir(_ url: URL) {
-        NSWorkspace.shared.open(url)
+        Plataforma.abrir(url)
     }
 
     // MARK: - Lógica

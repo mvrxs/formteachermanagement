@@ -37,11 +37,11 @@ struct TarjetaSeccion<Contenido: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(Color.fondoTarjeta)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                .stroke(Color.separadorSistema, lineWidth: 1)
         )
     }
 }
@@ -66,7 +66,7 @@ struct CampoEtiquetado: View {
                 .background(.quaternary.opacity(0.4), in: .rect(cornerRadius: 6))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        .stroke(Color.separadorSistema, lineWidth: 1)
                 )
         }
     }
@@ -79,8 +79,8 @@ struct AvatarAlumno: View {
 
     var body: some View {
         Group {
-            if let foto, let imagen = NSImage(data: foto) {
-                Image(nsImage: imagen)
+            if let foto, let imagen = Image(datosImagen: foto) {
+                imagen
                     .resizable()
                     .scaledToFill()
             } else {

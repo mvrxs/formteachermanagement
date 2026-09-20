@@ -8,7 +8,6 @@
 
 import SwiftUI
 import SwiftData
-import AppKit
 import UniformTypeIdentifiers
 
 extension EstadoEdad {
@@ -38,6 +37,10 @@ struct AlumnosListView: View {
     @State private var soloEmancipados = false
     @State private var errorExportar: String?
     @State private var confirmarBorrado: TipoBorrado?
+    @State private var docExportar: DocumentoDatos?
+    @State private var nombreExportar = ""
+    @State private var tipoExportar: UTType = .data
+    @State private var mostrarExportador = false
 
     enum TipoBorrado: Identifiable {
         case todos, visibles
@@ -86,11 +89,13 @@ struct AlumnosListView: View {
                     .onDelete(perform: borrar)
             }
         }
+        #if os(macOS)
         .onDeleteCommand {
             if let seleccion { borrarAlumno(seleccion) }
         }
+        #endif
         .navigationTitle("Alumnos")
-        .navigationSubtitle(subtitulo)
+        .subtituloNavegacion(subtitulo)
         .navigationSplitViewColumnWidth(min: 345, ideal: 415, max: 500)
         .searchable(text: $busqueda, prompt: "Buscar")
         .searchSuggestions {
@@ -189,6 +194,16 @@ struct AlumnosListView: View {
         } message: {
             Text(errorExportar ?? "")
         }
+        .fileExporter(
+            isPresented: $mostrarExportador,
+            document: docExportar,
+            contentType: tipoExportar,
+            defaultFilename: nombreExportar
+        ) { resultado in
+            if case .failure(let error) = resultado {
+                errorExportar = error.localizedDescription
+            }
+        }
         .confirmationDialog(
             "¿Eliminar alumnos?",
             isPresented: Binding(get: { confirmarBorrado != nil },
@@ -242,28 +257,7 @@ struct AlumnosListView: View {
             }
     }
 
-    // MARK: - Exportación a PowerPoint
-
-    private func exportarPowerPoint() {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType(filenameExtension: "pptx") ?? .presentation]
-        panel.nameFieldStringValue = "Grupo 1SMX-A.pptx"
-        panel.canCreateDirectories = true
-        panel.title = "Exportar a PowerPoint"
-
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-
-        let datos = ExportadorPowerPoint.generar(
-            alumnos: filtrados,
-            grupo: "1SMX-A",
-            logoPNG: logoMonlauPNG()
-        )
-        do {
-            try datos.write(to: url)
-        } catch {
-            errorExportar = error.localizedDescription
-        }
-    }
+    // MARK: - Exportación (fileExporter, macOS + iOS)
 
     private enum FormatoTabla {
         case csv, excel
@@ -271,31 +265,27 @@ struct AlumnosListView: View {
         var tipo: UTType { self == .csv ? .commaSeparatedText : (UTType(filenameExtension: "xlsx") ?? .spreadsheet) }
     }
 
+    private func exportarPowerPoint() {
+        let datos = ExportadorPowerPoint.generar(
+            alumnos: filtrados,
+            grupo: "1SMX-A",
+            logoPNG: Plataforma.pngDeAsset("LogoMonlau")
+        )
+        presentarExportador(datos, tipo: UTType(filenameExtension: "pptx") ?? .data, nombre: "Grupo 1SMX-A.pptx")
+    }
+
     private func exportarTabla(_ formato: FormatoTabla) {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [formato.tipo]
-        panel.nameFieldStringValue = "Alumnos 1SMX-A.\(formato.ext)"
-        panel.canCreateDirectories = true
-        panel.title = formato == .csv ? "Exportar a CSV" : "Exportar a Excel"
-
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-
         let datos = formato == .csv
             ? ExportadorTabla.csv(alumnos: filtrados)
             : ExportadorTabla.xlsx(alumnos: filtrados)
-        do {
-            try datos.write(to: url)
-        } catch {
-            errorExportar = error.localizedDescription
-        }
+        presentarExportador(datos, tipo: formato.tipo, nombre: "Alumnos 1SMX-A.\(formato.ext)")
     }
 
-    /// Logo de la escuela desde el catálogo de assets, re-codificado a PNG para el .pptx.
-    private func logoMonlauPNG() -> Data? {
-        guard let img = NSImage(named: "LogoMonlau"),
-              let tiff = img.tiffRepresentation,
-              let rep = NSBitmapImageRep(data: tiff) else { return nil }
-        return rep.representation(using: .png, properties: [:])
+    private func presentarExportador(_ datos: Data, tipo: UTType, nombre: String) {
+        docExportar = DocumentoDatos(datos: datos, tipo: tipo)
+        tipoExportar = tipo
+        nombreExportar = nombre
+        mostrarExportador = true
     }
 
     private func nuevoAlumno() {

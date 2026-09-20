@@ -77,7 +77,7 @@ struct CalendarioTutoriasView: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .overlay(Rectangle().stroke(Color(nsColor: .separatorColor), lineWidth: 0.5))
+        .overlay(Rectangle().stroke(Color.separadorSistema, lineWidth: 0.5))
     }
 
     private func celda(_ dia: Date) -> some View {
@@ -115,12 +115,12 @@ struct CalendarioTutoriasView: View {
         }
         .padding(4)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(delMes ? Color.clear : Color(nsColor: .separatorColor).opacity(0.08))
+        .background(delMes ? Color.clear : Color.separadorSistema.opacity(0.08))
         .overlay(alignment: .top) {
-            Rectangle().fill(Color(nsColor: .separatorColor)).frame(height: 0.5)
+            Rectangle().fill(Color.separadorSistema).frame(height: 0.5)
         }
         .overlay(alignment: .leading) {
-            Rectangle().fill(Color(nsColor: .separatorColor)).frame(width: 0.5)
+            Rectangle().fill(Color.separadorSistema).frame(width: 0.5)
         }
     }
 

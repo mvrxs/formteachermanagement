@@ -10,27 +10,28 @@ import SwiftData
 
 @Model
 final class Tutoria {
-    var fecha: Date
+    // Defaults en la declaración: requisito de SwiftData + CloudKit.
+    var fecha: Date = Date.now
 
     /// Si la tutoría llegó a realizarse (por si se planifica y luego se cancela).
-    var realizada: Bool
+    var realizada: Bool = true
 
     /// Modalidad almacenada como raw String de `Modalidad`.
-    var modalidadRaw: String
+    var modalidadRaw: String = Modalidad.presencial.rawValue
 
     /// Con quién se realizó, raw String de `Interlocutor`.
-    var interlocutorRaw: String
+    var interlocutorRaw: String = Interlocutor.alumno.rawValue
 
     /// Detalle libre cuando el interlocutor es "otro".
-    var interlocutorOtro: String
+    var interlocutorOtro: String = ""
 
-    var temasTratados: String
-    var acuerdos: String
+    var temasTratados: String = ""
+    var acuerdos: String = ""
 
     /// Notas largas: aquí se pega el resumen/transcripción de una grabación.
-    var notasTranscripcion: String
+    var notasTranscripcion: String = ""
 
-    var fechaCreacion: Date
+    var fechaCreacion: Date = Date.now
 
     /// Identificador del evento en el Calendario de macOS (EventKit), si está sincronizado.
     var eventKitIdentifier: String?

@@ -37,11 +37,13 @@ struct NecesidadesListView: View {
             }
             .onDelete(perform: borrar)
         }
+        #if os(macOS)
         .onDeleteCommand {
             if let seleccion { borrarNecesidad(seleccion) }
         }
+        #endif
         .navigationTitle("Necesidades")
-        .navigationSubtitle("\(necesidades.count) registradas")
+        .subtituloNavegacion("\(necesidades.count) registradas")
         .navigationSplitViewColumnWidth(min: 280, ideal: 320, max: 420)
         .toolbar {
             ToolbarItem {

@@ -11,37 +11,39 @@ import SwiftData
 @Model
 final class Alumno {
     // MARK: - Identidad
-    var apellidos: String
-    var nombre: String
+    // Valores por defecto EN LA DECLARACIÓN: requisito de SwiftData + CloudKit
+    // (toda propiedad no opcional debe tener default para poder sincronizar).
+    var apellidos: String = ""
+    var nombre: String = ""
     var fechaNacimiento: Date?
-    var poblacionNacimiento: String
+    var poblacionNacimiento: String = ""
 
     /// Número de documento (DNI/NIE). El tipo se deriva con `tipoDocumento`.
-    var numeroDocumento: String
+    var numeroDocumento: String = ""
 
     // MARK: - Contacto del alumno
-    var telefono: String
-    var email: String
-    var direccionActual: String
-    var codigoPostal: String
-    var localidadActual: String
+    var telefono: String = ""
+    var email: String = ""
+    var direccionActual: String = ""
+    var codigoPostal: String = ""
+    var localidadActual: String = ""
 
     // MARK: - Familia / tutores
-    var nombrePadre: String
-    var nombreMadre: String
+    var nombrePadre: String = ""
+    var nombreMadre: String = ""
 
-    var telefonoTutor1: String
-    var emailTutor1: String
-    var telefonoTutor2: String
-    var emailTutor2: String
+    var telefonoTutor1: String = ""
+    var emailTutor1: String = ""
+    var telefonoTutor2: String = ""
+    var emailTutor2: String = ""
 
     /// Tutor legal, cuando difiere de padre/madre (acogida, tutela, etc.).
-    var tutorLegal: String
-    var telefonoTutorLegal: String
+    var tutorLegal: String = ""
+    var telefonoTutorLegal: String = ""
 
     /// Situación familiar delicada: padres separados o que no se hablan.
-    var padresSeparados: Bool
-    var padresNoSeHablan: Bool
+    var padresSeparados: Bool = false
+    var padresNoSeHablan: Bool = false
 
     // MARK: - Autorizaciones y académico
     // Valor por defecto EN LA DECLARACIÓN (no solo en el init): SwiftData lo usa
@@ -68,14 +70,14 @@ final class Alumno {
     var emancipado: Bool = false
 
     // MARK: - Salud / notas
-    var alergiasMedico: String
-    var observaciones: String
+    var alergiasMedico: String = ""
+    var observaciones: String = ""
 
     /// Foto del alumno (JPEG redimensionado). Guardada en disco aparte del store.
     @Attribute(.externalStorage) var foto: Data?
 
     // MARK: - Metadatos
-    var fechaCreacion: Date
+    var fechaCreacion: Date = Date.now
 
     // MARK: - Relaciones
     @Relationship(deleteRule: .cascade, inverse: \Tutoria.alumno)

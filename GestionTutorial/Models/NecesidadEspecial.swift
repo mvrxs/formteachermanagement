@@ -11,13 +11,14 @@ import SwiftData
 @Model
 final class NecesidadEspecial {
     /// Tipo almacenado como raw String de `TipoNecesidad`.
-    var tipoRaw: String
+    // Defaults en la declaración: requisito de SwiftData + CloudKit.
+    var tipoRaw: String = TipoNecesidad.otra.rawValue
 
-    var descripcionDiagnostico: String
-    var adaptacionesAplicadas: String
-    var observaciones: String
+    var descripcionDiagnostico: String = ""
+    var adaptacionesAplicadas: String = ""
+    var observaciones: String = ""
 
-    var fechaCreacion: Date
+    var fechaCreacion: Date = Date.now
 
     // MARK: - Relación
     var alumno: Alumno?

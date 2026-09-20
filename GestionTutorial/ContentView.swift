@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 
+#if os(macOS)
 enum Seccion: String, CaseIterable, Identifiable {
     case alumnos = "Alumnos"
     case tutorias = "Tutorías"
@@ -87,6 +88,13 @@ struct ContentView: View {
     }
 }
 
+#Preview {
+    ContentView()
+        .modelContainer(for: [Alumno.self, Tutoria.self, NecesidadEspecial.self], inMemory: true)
+}
+#endif
+
+/// Placeholder de columna de detalle. Compartido macOS/iOS.
 struct PlaceholderDetalle: View {
     var texto: String
     var simbolo: String
@@ -94,9 +102,4 @@ struct PlaceholderDetalle: View {
     var body: some View {
         ContentUnavailableView(texto, systemImage: simbolo)
     }
-}
-
-#Preview {
-    ContentView()
-        .modelContainer(for: [Alumno.self, Tutoria.self, NecesidadEspecial.self], inMemory: true)
 }

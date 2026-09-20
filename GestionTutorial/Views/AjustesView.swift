@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 struct AjustesView: View {
     @State private var seccion: SeccionAjuste? = .general
@@ -22,9 +25,11 @@ struct AjustesView: View {
             List(secciones, selection: $seccion) { s in
                 Label(s.titulo, systemImage: s.simbolo).tag(s)
             }
-            .searchable(text: $busqueda, placement: .sidebar, prompt: "Buscar")
+            .searchable(text: $busqueda, prompt: "Buscar")
             .navigationSplitViewColumnWidth(min: 190, ideal: 200, max: 230)
+            #if os(macOS)
             .toolbar(removing: .sidebarToggle)
+            #endif
         } detail: {
             Group {
                 switch seccion ?? .general {
@@ -35,9 +40,11 @@ struct AjustesView: View {
                 }
             }
             .navigationTitle((seccion ?? .general).titulo)
-            .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        #if os(macOS)
         .frame(width: 660, height: 380)
+        #endif
     }
 }
 
@@ -83,9 +90,17 @@ private struct AjustesAcercaDe: View {
 
     var body: some View {
         VStack(spacing: 12) {
+            #if os(macOS)
             Image(nsImage: NSApp.applicationIconImage)
                 .resizable()
                 .frame(width: 96, height: 96)
+            #else
+            Image("LogoMonlau")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 96, height: 96)
+                .clipShape(.rect(cornerRadius: 18))
+            #endif
 
             Text(nombreApp)
                 .font(.title2.bold())

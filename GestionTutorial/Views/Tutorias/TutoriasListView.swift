@@ -40,11 +40,13 @@ struct TutoriasListView: View {
             }
             .onDelete(perform: borrar)
         }
+        #if os(macOS)
         .onDeleteCommand {
             if let seleccion { borrarTutoria(seleccion) }
         }
+        #endif
         .navigationTitle("Tutorías")
-        .navigationSubtitle("\(tutorias.count) registradas")
+        .subtituloNavegacion("\(tutorias.count) registradas")
         .navigationSplitViewColumnWidth(min: 280, ideal: 320, max: 420)
         .toolbar {
             ToolbarItem {

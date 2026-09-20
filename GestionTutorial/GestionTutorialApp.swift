@@ -2,7 +2,8 @@
 //  GestionTutorialApp.swift
 //  GestionTutorial
 //
-//  Created by Marcos on 13/09/2026.
+//  App multiplataforma (macOS + iOS). En iOS los datos sincronizan con iCloud
+//  (CloudKit privado, cifrado); en macOS el almacenamiento es local.
 //
 
 import SwiftUI
@@ -23,27 +24,40 @@ struct GestionTutorialApp: App {
         Idioma(rawValue: idioma)?.locale
     }
 
-    /// Contenedor SwiftData 100% local (sin CloudKit). Datos sensibles de menores.
+    /// Contenedor SwiftData. En iOS usa CloudKit (base privada del usuario,
+    /// cifrada por Apple); en macOS se mantiene local por el modelo de reparto.
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Alumno.self,
             Tutoria.self,
             NecesidadEspecial.self,
         ])
-        let modelConfiguration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: false,
-            cloudKitDatabase: .none
-        )
 
+        func crear(_ cloudKit: ModelConfiguration.CloudKitDatabase) throws -> ModelContainer {
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: cloudKit)
+            return try ModelContainer(for: schema, configurations: [config])
+        }
+
+        #if os(iOS)
+        // Intenta CloudKit (iCloud privado, cifrado). Si no hay cuenta/entitlement
+        // (p. ej. simulador sin iCloud), cae a almacenamiento local para no fallar.
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try crear(.automatic)
+        } catch {
+            do { return try crear(.none) }
+            catch { fatalError("No se pudo crear el ModelContainer: \(error)") }
+        }
+        #else
+        do {
+            return try crear(.none)
         } catch {
             fatalError("No se pudo crear el ModelContainer: \(error)")
         }
+        #endif
     }()
 
     var body: some Scene {
+        #if os(macOS)
         WindowGroup {
             ContentView()
                 .preferredColorScheme(Apariencia(rawValue: apariencia)?.colorScheme)
@@ -69,5 +83,14 @@ struct GestionTutorialApp: App {
                 .alertasActualizacion(gestorActualizaciones)
         }
         .modelContainer(sharedModelContainer)
+        #else
+        WindowGroup {
+            RaiziOS()
+                .preferredColorScheme(Apariencia(rawValue: apariencia)?.colorScheme)
+                .environment(\.locale, localeSeleccionado ?? Locale.autoupdatingCurrent)
+                .environment(gestorActualizaciones)
+        }
+        .modelContainer(sharedModelContainer)
+        #endif
     }
 }

@@ -117,17 +117,7 @@ struct ImportadorCSVView: View {
     private var numFechasInvalidas: Int { previsualizacion.filter { $0.fechaNacimientoTextoInvalido != nil }.count }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            encabezado
-            Divider()
-            HSplitView {
-                panelEntrada.frame(minWidth: 280)
-                panelMapeoYPreview.frame(minWidth: 420)
-            }
-            Divider()
-            pieAcciones
-        }
-        .frame(minWidth: 860, minHeight: 600)
+        contenido
         .onChange(of: textoPegado) { _, _ in reanalizar() }
         .onChange(of: separadorForzado) { _, _ in reanalizar() }
         .fileImporter(
@@ -140,6 +130,39 @@ struct ImportadorCSVView: View {
         } message: {
             Text(errorArchivo ?? "")
         }
+    }
+
+    // MARK: - Layout por plataforma
+
+    @ViewBuilder
+    private var contenido: some View {
+        #if os(macOS)
+        VStack(alignment: .leading, spacing: 0) {
+            encabezado
+            Divider()
+            HSplitView {
+                panelEntrada.frame(minWidth: 280)
+                panelMapeoYPreview.frame(minWidth: 420)
+            }
+            Divider()
+            pieAcciones
+        }
+        .frame(minWidth: 860, minHeight: 600)
+        #else
+        NavigationStack {
+            VStack(spacing: 0) {
+                panelEntrada.frame(height: 340)
+                Divider()
+                panelMapeoYPreview
+            }
+            .navigationTitle("Importar CSV")
+            .navigationBarTitleDisplayMode(.inline)
+            .safeAreaInset(edge: .bottom) {
+                pieAcciones
+                    .background(.bar)
+            }
+        }
+        #endif
     }
 
     // MARK: - Encabezado
