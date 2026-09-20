@@ -115,9 +115,6 @@ private struct AjustesAcercaDe: View {
             }
             .disabled(gestor.comprobando)
 
-            Text("MvrxStudio\u{00AE}")
-                .font(.subheadline)
-
             Divider().padding(.horizontal, 40)
 
             VStack(spacing: 4) {
