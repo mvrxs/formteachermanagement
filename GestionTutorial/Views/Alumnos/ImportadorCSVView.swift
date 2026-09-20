@@ -19,7 +19,7 @@ struct ImportadorCSVView: View {
 
     @State private var textoPegado = ""
     @State private var separadorForzado: SeparadorOpcion = .auto
-    @State private var mostrarSelectorArchivo = false
+    @State private var arrastrando = false
     @State private var errorArchivo: String?
 
     // Datos derivados del parseo (recalculados al cambiar texto/separador).
@@ -130,11 +130,6 @@ struct ImportadorCSVView: View {
         .onChange(of: textoPegado) { _, _ in reanalizar() }
         .onChange(of: separadorForzado) { _, _ in reanalizar() }
         .fileImporter(
-            isPresented: $mostrarSelectorArchivo,
-            allowedContentTypes: [.commaSeparatedText, .plainText, .text],
-            allowsMultipleSelection: false
-        ) { cargarArchivo($0) }
-        .fileImporter(
             isPresented: $mostrarSelectorMultiple,
             allowedContentTypes: [.commaSeparatedText, .plainText, .text],
             allowsMultipleSelection: true
@@ -152,7 +147,7 @@ struct ImportadorCSVView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Importar alumnos desde CSV")
                 .font(.title2.bold())
-            Text("Pega o abre el CSV exportado de Alexia. La primera fila debe ser la de cabeceras.")
+            Text("Arrastra, abre o pega los CSV exportados de Alexia. Se detectan y fusionan por alumno automáticamente.")
                 .foregroundStyle(.secondary)
                 .font(.subheadline)
         }
@@ -167,18 +162,12 @@ struct ImportadorCSVView: View {
                 Text("Datos de origen").font(.headline)
                 Spacer()
                 Button {
-                    mostrarSelectorArchivo = true
-                } label: {
-                    Label("Abrir archivo…", systemImage: "folder")
-                }
-                .buttonStyle(.bordered)
-                Button {
                     mostrarSelectorMultiple = true
                 } label: {
-                    Label("Varios CSV…", systemImage: "folder.badge.plus")
+                    Label("Abrir CSV…", systemImage: "folder")
                 }
                 .buttonStyle(.bordered)
-                .help("Importa varios CSV a la vez y fusiona por alumno (DNI o nombre)")
+                .help("Abre uno o varios CSV; se fusionan por alumno (DNI o nombre)")
             }
             HStack {
                 Picker("Separador", selection: $separadorForzado) {
@@ -197,7 +186,7 @@ struct ImportadorCSVView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay(alignment: .topLeading) {
                     if textoPegado.isEmpty {
-                        Text("\"Apellidos, Nombre\",Fecha nacimiento,…\n\"Pérez García, Ana\",15/06/2010,…")
+                        Text("Arrastra aquí tus CSV, o pégalos.\n\n\"Apellidos, Nombre\",Fecha,…\n\"Pérez García, Ana\",15/06/2010,…")
                             .foregroundStyle(.tertiary)
                             .font(.system(.body, design: .monospaced))
                             .padding(8)
@@ -205,8 +194,17 @@ struct ImportadorCSVView: View {
                     }
                 }
                 .clipShape(.rect(cornerRadius: 10))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(arrastrando ? Color.accentColor : Color.clear,
+                                      style: StrokeStyle(lineWidth: 2, dash: [6]))
+                }
         }
         .padding(16)
+        .dropDestination(for: URL.self) { urls, _ in
+            cargarURLs(urls)
+            return true
+        } isTargeted: { arrastrando = $0 }
     }
 
     // MARK: - Mapeo + preview
@@ -425,71 +423,58 @@ struct ImportadorCSVView: View {
         }
     }
 
-    private func cargarArchivo(_ resultado: Result<[URL], Error>) {
+    private func cargarVarios(_ resultado: Result<[URL], Error>) {
         switch resultado {
-        case .success(let urls):
-            guard let url = urls.first else { return }
-            let acceso = url.startAccessingSecurityScopedResource()
-            defer { if acceso { url.stopAccessingSecurityScopedResource() } }
-            do {
-                let datos = try Data(contentsOf: url)
-                textoPegado = decodificar(datos)
-                mapeo = []           // fuerza re-automapeo
-                reanalizar()
-            } catch {
-                errorArchivo = error.localizedDescription
-            }
-        case .failure(let error):
-            errorArchivo = error.localizedDescription
+        case .success(let urls): cargarURLs(urls)
+        case .failure(let error): errorArchivo = error.localizedDescription
         }
     }
 
-    /// Carga varios CSV. Cada uno se auto-mapea (por cabecera si la detecta, o por
-    /// el valor de sus columnas) y se deja editable; la fusión es automática.
-    private func cargarVarios(_ resultado: Result<[URL], Error>) {
-        switch resultado {
-        case .success(let urls):
-            guard !urls.isEmpty else { return }
-            var cargados: [ArchivoCSV] = []
+    /// Carga uno o varios CSV (desde el selector o arrastrados). Cada archivo se
+    /// auto-mapea (por cabecera si la detecta, o por el valor de sus columnas) y
+    /// se acumula; la fusión por alumno es automática.
+    private func cargarURLs(_ urls: [URL]) {
+        let csvs = urls.filter { ["csv", "txt", "tsv", "tab"].contains($0.pathExtension.lowercased()) || $0.pathExtension.isEmpty }
+        guard !csvs.isEmpty else {
+            errorArchivo = "Arrastra archivos CSV (.csv, .txt)."
+            return
+        }
 
-            for url in urls {
-                let acceso = url.startAccessingSecurityScopedResource()
-                defer { if acceso { url.stopAccessingSecurityScopedResource() } }
-                guard let datos = try? Data(contentsOf: url) else { continue }
+        var cargados: [ArchivoCSV] = []
+        for url in csvs {
+            let acceso = url.startAccessingSecurityScopedResource()
+            defer { if acceso { url.stopAccessingSecurityScopedResource() } }
+            guard let datos = try? Data(contentsOf: url) else { continue }
 
-                let texto = decodificar(datos)
-                let sep = CSV.detectarSeparador(texto)
-                let filas = CSV.parsear(texto, separador: sep)
-                guard !filas.isEmpty else { continue }
+            let texto = decodificar(datos)
+            let sep = CSV.detectarSeparador(texto)
+            let filas = CSV.parsear(texto, separador: sep)
+            guard !filas.isEmpty else { continue }
 
-                let hayCabecera = adivinarCabecera(filas)
-                let mapeo = hayCabecera
-                    ? (filas.first ?? []).map { MapeoColumnas.deducir($0) }
-                    : FusionAlumnos.autoMapearPorValor(filas, hayCabecera: false)
+            let hayCabecera = adivinarCabecera(filas)
+            let mapeo = hayCabecera
+                ? (filas.first ?? []).map { MapeoColumnas.deducir($0) }
+                : FusionAlumnos.autoMapearPorValor(filas, hayCabecera: false)
 
-                cargados.append(ArchivoCSV(nombre: url.lastPathComponent,
-                                           filas: filas,
-                                           hayCabecera: hayCabecera,
-                                           mapeo: mapeo))
-            }
+            cargados.append(ArchivoCSV(nombre: url.lastPathComponent,
+                                       filas: filas,
+                                       hayCabecera: hayCabecera,
+                                       mapeo: mapeo))
+        }
 
-            guard !cargados.isEmpty else {
-                errorArchivo = "Los CSV seleccionados están vacíos o no se pudieron leer."
-                return
-            }
+        guard !cargados.isEmpty else {
+            errorArchivo = "Los CSV están vacíos o no se pudieron leer."
+            return
+        }
 
-            // Limpia el modo pegado para no mezclar fuentes.
-            textoPegado = ""
-            cabeceras = []
-            filasDatos = []
-            mapeo = []
-            // Acumula (permite "añadir más CSV"), evitando repetir por nombre.
-            for nuevo in cargados where !archivos.contains(where: { $0.nombre == nuevo.nombre }) {
-                archivos.append(nuevo)
-            }
-
-        case .failure(let error):
-            errorArchivo = error.localizedDescription
+        // Limpia el modo pegado para no mezclar fuentes.
+        textoPegado = ""
+        cabeceras = []
+        filasDatos = []
+        mapeo = []
+        // Acumula (permite añadir más), evitando repetir por nombre.
+        for nuevo in cargados where !archivos.contains(where: { $0.nombre == nuevo.nombre }) {
+            archivos.append(nuevo)
         }
     }
 
