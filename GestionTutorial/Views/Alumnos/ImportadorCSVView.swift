@@ -20,7 +20,7 @@ struct ImportadorCSVView: View {
     @State private var textoPegado = ""
     @State private var separadorForzado: SeparadorOpcion = .auto
     @State private var arrastrando = false
-    @State private var mostrarPegar = false
+    @State private var mostrarPegar = true
     @State private var errorArchivo: String?
 
     // Datos derivados del parseo (recalculados al cambiar texto/separador).
