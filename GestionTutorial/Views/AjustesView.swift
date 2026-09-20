@@ -129,10 +129,8 @@ private struct AjustesAcercaDe: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
-
-            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
     }
 }
