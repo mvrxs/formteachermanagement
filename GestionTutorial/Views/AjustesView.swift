@@ -9,12 +9,20 @@ import SwiftUI
 
 struct AjustesView: View {
     @State private var seccion: SeccionAjuste? = .general
+    @State private var busqueda = ""
+
+    private var secciones: [SeccionAjuste] {
+        busqueda.isEmpty
+            ? SeccionAjuste.allCases
+            : SeccionAjuste.allCases.filter { $0.titulo.localizedCaseInsensitiveContains(busqueda) }
+    }
 
     var body: some View {
         NavigationSplitView {
-            List(SeccionAjuste.allCases, selection: $seccion) { s in
+            List(secciones, selection: $seccion) { s in
                 Label(s.titulo, systemImage: s.simbolo).tag(s)
             }
+            .searchable(text: $busqueda, placement: .sidebar, prompt: "Buscar")
             .navigationSplitViewColumnWidth(min: 190, ideal: 200, max: 230)
         } detail: {
             Group {
