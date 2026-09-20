@@ -266,9 +266,11 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "GestionTutorial/GestionTutorial-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = GestionTutorial/GestionTutorial.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = WMZNJ749WJ;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = WMZNJ749WJ;
 				"ENABLE_APP_SANDBOX[sdk=macosx*]" = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
@@ -308,9 +310,11 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "GestionTutorial/GestionTutorial-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = GestionTutorial/GestionTutorial.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = WMZNJ749WJ;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = WMZNJ749WJ;
 				"ENABLE_APP_SANDBOX[sdk=macosx*]" = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
