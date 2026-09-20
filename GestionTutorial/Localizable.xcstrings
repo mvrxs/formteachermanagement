@@ -293,6 +293,7 @@
 
     },
     "Acerca de" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ca" : {
           "stringUnit" : {
@@ -1029,6 +1030,7 @@
 
     },
     "Curso" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ca" : {
           "stringUnit" : {
@@ -1569,6 +1571,7 @@
       }
     },
     "General" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ca" : {
           "stringUnit" : {

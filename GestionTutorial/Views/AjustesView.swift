@@ -36,7 +36,8 @@ struct AjustesView: View {
             .navigationTitle((seccion ?? .general).titulo)
             .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(width: 680, height: 460)
+        .toolbar(removing: .sidebarToggle)
+        .frame(width: 660, height: 380)
     }
 }
 
