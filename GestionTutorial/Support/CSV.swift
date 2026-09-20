@@ -299,8 +299,9 @@ enum RolCSV: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Roles obligatorios para poder importar (si falta uno, quedarían datos a medias).
-    static var obligatorios: [RolCSV] { [.contactosPadres, .fichaPersonal, .listaNombres] }
+    /// Roles obligatorios para poder importar (si falta uno, quedarían datos a
+    /// medias). La lista de nombres es redundante (solo nombres) y no se exige.
+    static var obligatorios: [RolCSV] { [.contactosPadres, .fichaPersonal] }
 }
 
 // MARK: - Fusión de varios CSV

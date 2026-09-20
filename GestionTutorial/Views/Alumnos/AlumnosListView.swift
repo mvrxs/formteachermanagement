@@ -37,6 +37,12 @@ struct AlumnosListView: View {
     @State private var soloInglesConvalidado = false
     @State private var soloEmancipados = false
     @State private var errorExportar: String?
+    @State private var confirmarBorrado: TipoBorrado?
+
+    enum TipoBorrado: Identifiable {
+        case todos, visibles
+        var id: Int { self == .todos ? 0 : 1 }
+    }
 
     /// Filtrado solo por búsqueda (para contar por estado en el menú).
     private var buscados: [Alumno] {
@@ -117,6 +123,26 @@ struct AlumnosListView: View {
                           : "line.3.horizontal.decrease.circle")
                 }
             }
+            ToolbarItem {
+                Menu {
+                    Button(role: .destructive) {
+                        confirmarBorrado = .todos
+                    } label: {
+                        Label("Eliminar todos (\(alumnos.count))", systemImage: "trash")
+                    }
+                    if hayFiltroActivo || !busqueda.isEmpty {
+                        Button(role: .destructive) {
+                            confirmarBorrado = .visibles
+                        } label: {
+                            Label("Eliminar \(filtrados.count) visibles", systemImage: "trash")
+                        }
+                    }
+                } label: {
+                    Label("Eliminar", systemImage: "trash")
+                }
+                .disabled(alumnos.isEmpty)
+                .help("Eliminar todos los alumnos o los visibles según el filtro")
+            }
             ToolbarSpacer(.fixed)
             ToolbarItem {
                 Button {
@@ -162,6 +188,22 @@ struct AlumnosListView: View {
             Button("OK") { errorExportar = nil }
         } message: {
             Text(errorExportar ?? "")
+        }
+        .confirmationDialog(
+            "¿Eliminar alumnos?",
+            isPresented: Binding(get: { confirmarBorrado != nil },
+                                 set: { if !$0 { confirmarBorrado = nil } }),
+            presenting: confirmarBorrado
+        ) { tipo in
+            Button(tipo == .todos ? "Eliminar los \(alumnos.count)" : "Eliminar \(filtrados.count) visibles",
+                   role: .destructive) {
+                ejecutarBorrado(tipo)
+            }
+            Button("Cancelar", role: .cancel) { confirmarBorrado = nil }
+        } message: { tipo in
+            Text(tipo == .todos
+                 ? "Se eliminarán TODOS los alumnos (\(alumnos.count)) y sus tutorías y necesidades. No se puede deshacer."
+                 : "Se eliminarán los \(filtrados.count) alumnos visibles y sus datos. No se puede deshacer.")
         }
         .overlay {
             if alumnos.isEmpty {
@@ -271,6 +313,15 @@ struct AlumnosListView: View {
     private func borrarAlumno(_ alumno: Alumno) {
         if alumno == seleccion { seleccion = nil }
         modelContext.delete(alumno)
+    }
+
+    private func ejecutarBorrado(_ tipo: TipoBorrado) {
+        let objetivo = tipo == .todos ? alumnos : filtrados
+        seleccion = nil
+        for alumno in objetivo {
+            modelContext.delete(alumno)
+        }
+        confirmarBorrado = nil
     }
 }
 
