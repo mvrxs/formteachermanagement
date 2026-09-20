@@ -281,6 +281,28 @@ enum MapeoColumnas {
     }
 }
 
+/// Tipo de CSV dentro del juego que forma una ficha completa de alumno.
+enum RolCSV: String, CaseIterable, Identifiable {
+    case contactosPadres    // nombre + padre/madre (email/tel)
+    case fichaPersonal      // nombre + DNI + fecha + dirección…
+    case listaNombres       // solo la lista de alumnos del grupo
+    case otro
+
+    var id: String { rawValue }
+
+    var titulo: String {
+        switch self {
+        case .contactosPadres: return "Contactos de padres/madres"
+        case .fichaPersonal:   return "Ficha personal (DNI, fecha, dirección)"
+        case .listaNombres:    return "Lista de alumnos del grupo"
+        case .otro:            return "No reconocido"
+        }
+    }
+
+    /// Roles obligatorios para poder importar (si falta uno, quedarían datos a medias).
+    static var obligatorios: [RolCSV] { [.contactosPadres, .fichaPersonal, .listaNombres] }
+}
+
 // MARK: - Fusión de varios CSV
 
 /// Une filas provenientes de varios CSV en un registro por alumno. Empareja por
@@ -322,7 +344,33 @@ enum FusionAlumnos {
         for i in mapeo.indices where mapeo[i] == .padreContacto {
             if vistoPadre { mapeo[i] = .madreContacto } else { vistoPadre = true }
         }
+        // Localidad: primera columna de solo letras (una ciudad) justo tras el CP.
+        if let cp = mapeo.firstIndex(of: .codigoPostal) {
+            for c in (cp + 1)..<numCol where mapeo[c] == .ignorar {
+                let vals = datos.compactMap { c < $0.count ? $0[c] : nil }
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { !$0.isEmpty }
+                let permitidos = CharacterSet.letters.union(CharacterSet(charactersIn: " '’-."))
+                let sonCiudad = !vals.isEmpty && vals.allSatisfy {
+                    $0.unicodeScalars.allSatisfy(permitidos.contains)
+                }
+                if sonCiudad { mapeo[c] = .localidadActual; break }
+            }
+        }
         return mapeo
+    }
+
+    /// Rol de un CSV deducido de su mapeo, para exigir el juego completo.
+    static func rol(_ mapeo: [CampoDestino]) -> RolCSV {
+        let tieneNombre = mapeo.contains(.apellidosNombre) || mapeo.contains(.apellidos)
+        let tieneContacto = mapeo.contains(.padreContacto) || mapeo.contains(.madreContacto)
+        let tieneFicha = mapeo.contains(.numeroDocumento) || mapeo.contains(.fechaNacimiento)
+
+        if tieneContacto { return .contactosPadres }
+        if tieneFicha { return .fichaPersonal }
+        // Solo nombres (y columnas vacías/ignoradas): lista de clase.
+        if tieneNombre { return .listaNombres }
+        return .otro
     }
 
     /// Construye la lista fusionada a partir de varios CSV ya mapeados. Quita el

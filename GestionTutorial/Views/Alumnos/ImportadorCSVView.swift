@@ -38,20 +38,8 @@ struct ImportadorCSVView: View {
         var hayCabecera: Bool
         var mapeo: [CampoDestino]
 
-        var numColumnas: Int { filas.map(\.count).max() ?? 0 }
         var numFilas: Int { hayCabecera ? max(0, filas.count - 1) : filas.count }
-
-        /// Primer valor no vacío de la columna (fila de muestra).
-        func muestra(_ col: Int) -> String {
-            let datos = hayCabecera ? Array(filas.dropFirst()) : filas
-            return datos.first(where: { col < $0.count && !$0[col].trimmingCharacters(in: .whitespaces).isEmpty })?[col] ?? ""
-        }
-
-        /// Cabecera de la columna (si la hay) para mostrar como etiqueta.
-        func etiqueta(_ col: Int) -> String {
-            if hayCabecera, let h = filas.first, col < h.count, !h[col].isEmpty { return h[col] }
-            return "Columna \(col + 1)"
-        }
+        var rol: RolCSV { FusionAlumnos.rol(mapeo) }
 
         var entrada: FusionAlumnos.EntradaCSV {
             .init(filas: filas, hayCabecera: hayCabecera, mapeo: mapeo)
@@ -59,6 +47,13 @@ struct ImportadorCSVView: View {
     }
 
     private var modoMulti: Bool { !archivos.isEmpty }
+
+    /// Roles obligatorios que aún no aparecen entre los CSV cargados.
+    private var rolesFaltantes: [RolCSV] {
+        let presentes = Set(archivos.map(\.rol))
+        return RolCSV.obligatorios.filter { !presentes.contains($0) }
+    }
+    private var multiCompleto: Bool { modoMulti && rolesFaltantes.isEmpty }
 
     enum SeparadorOpcion: String, CaseIterable, Identifiable {
         case auto = "Auto"
@@ -270,9 +265,9 @@ struct ImportadorCSVView: View {
     }
 
     private var panelMultiArchivos: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Varios CSV").font(.headline)
+                Text("Varios CSV (automático)").font(.headline)
                 Spacer()
                 Button("Quitar todos", systemImage: "xmark.circle") {
                     archivos = []
@@ -280,66 +275,47 @@ struct ImportadorCSVView: View {
                 .buttonStyle(.borderless)
                 .font(.caption)
             }
-            Text("Se fusionan por DNI o, si falta, por nombre. Ajusta el mapeo de cada columna si hace falta.")
-                .font(.caption).foregroundStyle(.secondary)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(archivos.indices, id: \.self) { i in
-                        bloqueArchivo(i)
-                    }
-                }
-            }
-            .frame(maxHeight: 240)
-        }
-    }
 
-    private func bloqueArchivo(_ i: Int) -> some View {
-        GroupBox {
+            // Archivos cargados con su rol detectado.
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Image(systemName: "doc.text").foregroundStyle(.secondary)
-                    Text(archivos[i].nombre).fontWeight(.medium).lineLimit(1)
-                    Spacer()
-                    Text("\(archivos[i].numFilas) fila(s)").font(.caption).foregroundStyle(.secondary)
-                }
-                Toggle("La 1ª fila es cabecera", isOn: Binding(
-                    get: { archivos[i].hayCabecera },
-                    set: { archivos[i].hayCabecera = $0; remapear(i) }
-                ))
-                .font(.caption)
-                .toggleStyle(.checkbox)
-
-                ForEach(0..<archivos[i].numColumnas, id: \.self) { col in
+                ForEach(archivos) { a in
                     HStack(spacing: 8) {
+                        Image(systemName: "doc.text.fill").foregroundStyle(.secondary)
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(archivos[i].etiqueta(col)).font(.caption).lineLimit(1)
-                            let m = archivos[i].muestra(col)
-                            if !m.isEmpty {
-                                Text(m).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                            }
+                            Text(a.nombre).fontWeight(.medium).lineLimit(1)
+                            Text(a.rol.titulo)
+                                .font(.caption)
+                                .foregroundStyle(a.rol == .otro ? .orange : .secondary)
                         }
                         Spacer()
-                        Picker("", selection: Binding(
-                            get: { col < archivos[i].mapeo.count ? archivos[i].mapeo[col] : .ignorar },
-                            set: { if col < archivos[i].mapeo.count { archivos[i].mapeo[col] = $0 } }
-                        )) {
-                            ForEach(CampoDestino.allCases) { Text($0.nombre).tag($0) }
-                        }
-                        .labelsHidden()
-                        .frame(width: 210)
+                        Text("\(a.numFilas) fila(s)").font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
-        }
-    }
 
-    /// Recalcula el mapeo de un archivo al cambiar el toggle de cabecera.
-    private func remapear(_ i: Int) {
-        let a = archivos[i]
-        if a.hayCabecera, let h = a.filas.first {
-            archivos[i].mapeo = h.map { MapeoColumnas.deducir($0) }
-        } else {
-            archivos[i].mapeo = FusionAlumnos.autoMapearPorValor(a.filas, hayCabecera: a.hayCabecera)
+            Divider()
+
+            // Checklist de tipos obligatorios.
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Tipos necesarios").font(.subheadline.bold())
+                ForEach(RolCSV.obligatorios) { rol in
+                    let ok = archivos.contains { $0.rol == rol }
+                    Label(rol.titulo, systemImage: ok ? "checkmark.circle.fill" : "circle")
+                        .font(.caption)
+                        .foregroundStyle(ok ? .green : .secondary)
+                }
+            }
+
+            if !rolesFaltantes.isEmpty {
+                Label("Faltan CSV: sin ellos los datos quedarían a medias. Añade los que faltan.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption).foregroundStyle(.orange)
+                Button("Añadir más CSV…", systemImage: "plus") {
+                    mostrarSelectorMultiple = true
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
         }
     }
 
@@ -397,14 +373,17 @@ struct ImportadorCSVView: View {
 
     private var pieAcciones: some View {
         HStack {
-            if !previsualizacion.isEmpty {
+            if modoMulti, !multiCompleto {
+                Label("Faltan tipos de CSV para importar", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange).font(.subheadline)
+            } else if !previsualizacion.isEmpty {
                 Text("Se importarán \(nuevos.count) nuevo(s)"
                      + (numDuplicados > 0 ? "; \(numDuplicados) duplicado(s) se omiten." : "."))
                     .foregroundStyle(.secondary).font(.subheadline)
             }
             Spacer()
             Button("Cancelar", role: .cancel) { dismiss() }
-            if numDuplicados > 0 {
+            if numDuplicados > 0, !(modoMulti && !multiCompleto) {
                 Menu {
                     Button("Importar TODOS, incluidos duplicados (\(previsualizacion.count))") {
                         importar(previsualizacion)
@@ -421,7 +400,7 @@ struct ImportadorCSVView: View {
                 Text("Importar \(nuevos.count) nuevo(s)")
             }
             .buttonStyle(.borderedProminent)
-            .disabled(nuevos.isEmpty)
+            .disabled(nuevos.isEmpty || (modoMulti && !multiCompleto))
         }
         .padding(16)
     }
@@ -504,7 +483,10 @@ struct ImportadorCSVView: View {
             cabeceras = []
             filasDatos = []
             mapeo = []
-            archivos = cargados
+            // Acumula (permite "añadir más CSV"), evitando repetir por nombre.
+            for nuevo in cargados where !archivos.contains(where: { $0.nombre == nuevo.nombre }) {
+                archivos.append(nuevo)
+            }
 
         case .failure(let error):
             errorArchivo = error.localizedDescription
