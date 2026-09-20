@@ -125,11 +125,6 @@ struct AlumnosListView: View {
             }
             ToolbarItem {
                 Menu {
-                    Button(role: .destructive) {
-                        confirmarBorrado = .todos
-                    } label: {
-                        Label("Eliminar todos (\(alumnos.count))", systemImage: "trash")
-                    }
                     if hayFiltroActivo || !busqueda.isEmpty {
                         Button(role: .destructive) {
                             confirmarBorrado = .visibles
@@ -137,11 +132,16 @@ struct AlumnosListView: View {
                             Label("Eliminar \(filtrados.count) visibles", systemImage: "trash")
                         }
                     }
+                    Button(role: .destructive) {
+                        confirmarBorrado = .todos
+                    } label: {
+                        Label("Eliminar todos…", systemImage: "trash")
+                    }
                 } label: {
-                    Label("Eliminar", systemImage: "trash")
+                    Label("Más acciones", systemImage: "ellipsis.circle")
                 }
+                .menuIndicator(.hidden)
                 .disabled(alumnos.isEmpty)
-                .help("Eliminar todos los alumnos o los visibles según el filtro")
             }
             ToolbarSpacer(.fixed)
             ToolbarItem {
