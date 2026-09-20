@@ -8,18 +8,59 @@
 import SwiftUI
 
 struct AjustesView: View {
+    @State private var seccion: SeccionAjuste? = .general
+    @State private var busqueda = ""
+
+    private var secciones: [SeccionAjuste] {
+        busqueda.isEmpty
+            ? SeccionAjuste.allCases
+            : SeccionAjuste.allCases.filter { $0.titulo.localizedCaseInsensitiveContains(busqueda) }
+    }
+
     var body: some View {
-        TabView {
-            AjustesGeneral()
-                .tabItem { Label("General", systemImage: "gearshape") }
-            AjustesCalendario()
-                .tabItem { Label("Calendario", systemImage: "calendar") }
-            AjustesCurso()
-                .tabItem { Label("Curso", systemImage: "graduationcap") }
-            AjustesAcercaDe()
-                .tabItem { Label("Acerca de", systemImage: "info.circle") }
+        NavigationSplitView {
+            List(secciones, selection: $seccion) { s in
+                Label(s.titulo, systemImage: s.simbolo).tag(s)
+            }
+            .searchable(text: $busqueda, placement: .sidebar, prompt: "Buscar")
+            .navigationSplitViewColumnWidth(min: 190, ideal: 200, max: 230)
+            .toolbar(removing: .sidebarToggle)
+        } detail: {
+            Group {
+                switch seccion ?? .general {
+                case .general:    AjustesGeneral()
+                case .calendario: AjustesCalendario()
+                case .curso:      AjustesCurso()
+                case .acercaDe:   AjustesAcercaDe()
+                }
+            }
+            .navigationTitle((seccion ?? .general).titulo)
+            .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(width: 460, height: 340)
+        .frame(width: 660, height: 380)
+    }
+}
+
+enum SeccionAjuste: String, CaseIterable, Identifiable {
+    case general, calendario, curso, acercaDe
+    var id: String { rawValue }
+
+    var titulo: String {
+        switch self {
+        case .general:    return "General"
+        case .calendario: return "Calendario"
+        case .curso:      return "Curso"
+        case .acercaDe:   return "Acerca de"
+        }
+    }
+
+    var simbolo: String {
+        switch self {
+        case .general:    return "gearshape"
+        case .calendario: return "calendar"
+        case .curso:      return "graduationcap"
+        case .acercaDe:   return "info.circle"
+        }
     }
 }
 
@@ -74,9 +115,6 @@ private struct AjustesAcercaDe: View {
             }
             .disabled(gestor.comprobando)
 
-            Text("Hecho por MVRX Studio\u{00AE}")
-                .font(.subheadline)
-
             Divider().padding(.horizontal, 40)
 
             VStack(spacing: 4) {
@@ -87,14 +125,12 @@ private struct AjustesAcercaDe: View {
                     .font(.callout)
             }
 
-            Text("Tu gestor de confianza · Datos locales, sin nube.")
+            Text("© 2026 MvrxStudio · Todos los derechos reservados.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
-
-            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
     }
 }
