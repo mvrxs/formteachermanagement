@@ -1201,9 +1201,6 @@
         }
       }
     },
-    "Eliminar" : {
-
-    },
     "Eliminar %lld visibles" : {
 
     },
@@ -1266,10 +1263,7 @@
         }
       }
     },
-    "Eliminar todos (%lld)" : {
-
-    },
-    "Eliminar todos los alumnos o los visibles según el filtro" : {
+    "Eliminar todos…" : {
 
     },
     "Eliminar tutoría" : {
@@ -1977,6 +1971,9 @@
           }
         }
       }
+    },
+    "Más acciones" : {
+
     },
     "Más antiguas primero" : {
       "localizations" : {
