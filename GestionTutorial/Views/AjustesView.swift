@@ -24,6 +24,7 @@ struct AjustesView: View {
             }
             .searchable(text: $busqueda, placement: .sidebar, prompt: "Buscar")
             .navigationSplitViewColumnWidth(min: 190, ideal: 200, max: 230)
+            .toolbar(removing: .sidebarToggle)
         } detail: {
             Group {
                 switch seccion ?? .general {
@@ -36,7 +37,6 @@ struct AjustesView: View {
             .navigationTitle((seccion ?? .general).titulo)
             .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         }
-        .toolbar(removing: .sidebarToggle)
         .frame(width: 660, height: 380)
     }
 }
