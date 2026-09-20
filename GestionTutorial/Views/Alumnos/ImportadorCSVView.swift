@@ -27,6 +27,39 @@ struct ImportadorCSVView: View {
     @State private var filasDatos: [[String]] = []
     @State private var mapeo: [CampoDestino] = []
 
+    // Modo "varios CSV": cada archivo con sus filas, mapeo y toggle de cabecera.
+    @State private var archivos: [ArchivoCSV] = []
+    @State private var mostrarSelectorMultiple = false
+
+    struct ArchivoCSV: Identifiable {
+        let id = UUID()
+        var nombre: String
+        var filas: [[String]]
+        var hayCabecera: Bool
+        var mapeo: [CampoDestino]
+
+        var numColumnas: Int { filas.map(\.count).max() ?? 0 }
+        var numFilas: Int { hayCabecera ? max(0, filas.count - 1) : filas.count }
+
+        /// Primer valor no vacío de la columna (fila de muestra).
+        func muestra(_ col: Int) -> String {
+            let datos = hayCabecera ? Array(filas.dropFirst()) : filas
+            return datos.first(where: { col < $0.count && !$0[col].trimmingCharacters(in: .whitespaces).isEmpty })?[col] ?? ""
+        }
+
+        /// Cabecera de la columna (si la hay) para mostrar como etiqueta.
+        func etiqueta(_ col: Int) -> String {
+            if hayCabecera, let h = filas.first, col < h.count, !h[col].isEmpty { return h[col] }
+            return "Columna \(col + 1)"
+        }
+
+        var entrada: FusionAlumnos.EntradaCSV {
+            .init(filas: filas, hayCabecera: hayCabecera, mapeo: mapeo)
+        }
+    }
+
+    private var modoMulti: Bool { !archivos.isEmpty }
+
     enum SeparadorOpcion: String, CaseIterable, Identifiable {
         case auto = "Auto"
         case coma = "Coma ( , )"
@@ -44,6 +77,13 @@ struct ImportadorCSVView: View {
 
     // MARK: - Preview con duplicados
 
+    /// Registros base antes de detectar duplicados: del modo multi (ya fusionados)
+    /// o del parseo del texto pegado con su mapeo.
+    private var baseImportados: [AlumnoImportado] {
+        if modoMulti { return FusionAlumnos.desdeArchivos(archivos.map(\.entrada)) }
+        return filasDatos.map { AlumnoImportado.desde(fila: $0, mapeo: mapeo) }
+    }
+
     private var previsualizacion: [AlumnoImportado] {
         let dnisExistentes = Set(existentes
             .map { normalizarDNI($0.numeroDocumento) }
@@ -54,8 +94,8 @@ struct ImportadorCSVView: View {
         var vistosNombre = Set<String>()
         var resultado: [AlumnoImportado] = []
 
-        for fila in filasDatos {
-            var a = AlumnoImportado.desde(fila: fila, mapeo: mapeo)
+        for base in baseImportados {
+            var a = base
 
             let dni = normalizarDNI(a.numeroDocumento)
             if !dni.isEmpty && (dnisExistentes.contains(dni) || vistosDNI.contains(dni)) {
@@ -99,6 +139,11 @@ struct ImportadorCSVView: View {
             allowedContentTypes: [.commaSeparatedText, .plainText, .text],
             allowsMultipleSelection: false
         ) { cargarArchivo($0) }
+        .fileImporter(
+            isPresented: $mostrarSelectorMultiple,
+            allowedContentTypes: [.commaSeparatedText, .plainText, .text],
+            allowsMultipleSelection: true
+        ) { cargarVarios($0) }
         .alert("No se pudo leer el archivo", isPresented: .constant(errorArchivo != nil)) {
             Button("OK") { errorArchivo = nil }
         } message: {
@@ -132,6 +177,13 @@ struct ImportadorCSVView: View {
                     Label("Abrir archivo…", systemImage: "folder")
                 }
                 .buttonStyle(.bordered)
+                Button {
+                    mostrarSelectorMultiple = true
+                } label: {
+                    Label("Varios CSV…", systemImage: "folder.badge.plus")
+                }
+                .buttonStyle(.bordered)
+                .help("Importa varios CSV a la vez y fusiona por alumno (DNI o nombre)")
             }
             HStack {
                 Picker("Separador", selection: $separadorForzado) {
@@ -166,10 +218,18 @@ struct ImportadorCSVView: View {
 
     private var panelMapeoYPreview: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if cabeceras.isEmpty {
+            if modoMulti {
+                panelMultiArchivos
+                Divider()
+                cabeceraPreview
+                List(previsualizacion) { a in
+                    filaPreview(a)
+                }
+                .clipShape(.rect(cornerRadius: 10))
+            } else if cabeceras.isEmpty {
                 ContentUnavailableView("Esperando datos",
                                        systemImage: "tablecells",
-                                       description: Text("Pega el CSV o abre un archivo para ver el mapeo de columnas."))
+                                       description: Text("Pega el CSV, abre un archivo o importa varios CSV a la vez."))
             } else {
                 Text("Mapeo de columnas").font(.headline)
                 Text("Auto-detectado por cabecera. Corrige a mano si algo no encaja.")
@@ -184,18 +244,7 @@ struct ImportadorCSVView: View {
                 .frame(maxHeight: 220)
 
                 Divider()
-                HStack {
-                    Text("Previsualización (\(previsualizacion.count))").font(.headline)
-                    Spacer()
-                    if numDuplicados > 0 {
-                        Label("\(numDuplicados) duplicado(s)", systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption).foregroundStyle(.orange)
-                    }
-                    if numFechasInvalidas > 0 {
-                        Label("\(numFechasInvalidas) fecha(s) no válidas", systemImage: "calendar.badge.exclamationmark")
-                            .font(.caption).foregroundStyle(.orange)
-                    }
-                }
+                cabeceraPreview
                 List(previsualizacion) { a in
                     filaPreview(a)
                 }
@@ -203,6 +252,95 @@ struct ImportadorCSVView: View {
             }
         }
         .padding(16)
+    }
+
+    private var cabeceraPreview: some View {
+        HStack {
+            Text("Previsualización (\(previsualizacion.count))").font(.headline)
+            Spacer()
+            if numDuplicados > 0 {
+                Label("\(numDuplicados) duplicado(s)", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption).foregroundStyle(.orange)
+            }
+            if numFechasInvalidas > 0 {
+                Label("\(numFechasInvalidas) fecha(s) no válidas", systemImage: "calendar.badge.exclamationmark")
+                    .font(.caption).foregroundStyle(.orange)
+            }
+        }
+    }
+
+    private var panelMultiArchivos: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Varios CSV").font(.headline)
+                Spacer()
+                Button("Quitar todos", systemImage: "xmark.circle") {
+                    archivos = []
+                }
+                .buttonStyle(.borderless)
+                .font(.caption)
+            }
+            Text("Se fusionan por DNI o, si falta, por nombre. Ajusta el mapeo de cada columna si hace falta.")
+                .font(.caption).foregroundStyle(.secondary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(archivos.indices, id: \.self) { i in
+                        bloqueArchivo(i)
+                    }
+                }
+            }
+            .frame(maxHeight: 240)
+        }
+    }
+
+    private func bloqueArchivo(_ i: Int) -> some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Image(systemName: "doc.text").foregroundStyle(.secondary)
+                    Text(archivos[i].nombre).fontWeight(.medium).lineLimit(1)
+                    Spacer()
+                    Text("\(archivos[i].numFilas) fila(s)").font(.caption).foregroundStyle(.secondary)
+                }
+                Toggle("La 1ª fila es cabecera", isOn: Binding(
+                    get: { archivos[i].hayCabecera },
+                    set: { archivos[i].hayCabecera = $0; remapear(i) }
+                ))
+                .font(.caption)
+                .toggleStyle(.checkbox)
+
+                ForEach(0..<archivos[i].numColumnas, id: \.self) { col in
+                    HStack(spacing: 8) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(archivos[i].etiqueta(col)).font(.caption).lineLimit(1)
+                            let m = archivos[i].muestra(col)
+                            if !m.isEmpty {
+                                Text(m).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                        }
+                        Spacer()
+                        Picker("", selection: Binding(
+                            get: { col < archivos[i].mapeo.count ? archivos[i].mapeo[col] : .ignorar },
+                            set: { if col < archivos[i].mapeo.count { archivos[i].mapeo[col] = $0 } }
+                        )) {
+                            ForEach(CampoDestino.allCases) { Text($0.nombre).tag($0) }
+                        }
+                        .labelsHidden()
+                        .frame(width: 210)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Recalcula el mapeo de un archivo al cambiar el toggle de cabecera.
+    private func remapear(_ i: Int) {
+        let a = archivos[i]
+        if a.hayCabecera, let h = a.filas.first {
+            archivos[i].mapeo = h.map { MapeoColumnas.deducir($0) }
+        } else {
+            archivos[i].mapeo = FusionAlumnos.autoMapearPorValor(a.filas, hayCabecera: a.hayCabecera)
+        }
     }
 
     private func filaMapeo(_ idx: Int) -> some View {
@@ -291,6 +429,10 @@ struct ImportadorCSVView: View {
     // MARK: - Lógica
 
     private func reanalizar() {
+        // Pegar/teclear texto sale del modo "varios CSV".
+        if !textoPegado.isEmpty, modoMulti {
+            archivos = []
+        }
         let filas = CSV.parsear(textoPegado, separador: separadorEfectivo)
         guard let primera = filas.first else {
             cabeceras = []; filasDatos = []; mapeo = []
@@ -323,9 +465,69 @@ struct ImportadorCSVView: View {
         }
     }
 
-    /// Decodifica probando UTF-8 y, si falla, Latin-1 (típico de Excel español).
+    /// Carga varios CSV. Cada uno se auto-mapea (por cabecera si la detecta, o por
+    /// el valor de sus columnas) y se deja editable; la fusión es automática.
+    private func cargarVarios(_ resultado: Result<[URL], Error>) {
+        switch resultado {
+        case .success(let urls):
+            guard !urls.isEmpty else { return }
+            var cargados: [ArchivoCSV] = []
+
+            for url in urls {
+                let acceso = url.startAccessingSecurityScopedResource()
+                defer { if acceso { url.stopAccessingSecurityScopedResource() } }
+                guard let datos = try? Data(contentsOf: url) else { continue }
+
+                let texto = decodificar(datos)
+                let sep = CSV.detectarSeparador(texto)
+                let filas = CSV.parsear(texto, separador: sep)
+                guard !filas.isEmpty else { continue }
+
+                let hayCabecera = adivinarCabecera(filas)
+                let mapeo = hayCabecera
+                    ? (filas.first ?? []).map { MapeoColumnas.deducir($0) }
+                    : FusionAlumnos.autoMapearPorValor(filas, hayCabecera: false)
+
+                cargados.append(ArchivoCSV(nombre: url.lastPathComponent,
+                                           filas: filas,
+                                           hayCabecera: hayCabecera,
+                                           mapeo: mapeo))
+            }
+
+            guard !cargados.isEmpty else {
+                errorArchivo = "Los CSV seleccionados están vacíos o no se pudieron leer."
+                return
+            }
+
+            // Limpia el modo pegado para no mezclar fuentes.
+            textoPegado = ""
+            cabeceras = []
+            filasDatos = []
+            mapeo = []
+            archivos = cargados
+
+        case .failure(let error):
+            errorArchivo = error.localizedDescription
+        }
+    }
+
+    /// Heurística: la 1ª fila es cabecera si sus valores se reconocen como
+    /// nombres de campo (y no como datos de un alumno).
+    private func adivinarCabecera(_ filas: [[String]]) -> Bool {
+        guard let h = filas.first, !h.isEmpty else { return false }
+        let mapeados = h.map { MapeoColumnas.deducir($0) }.filter { $0 != .ignorar }.count
+        return mapeados >= 2 && mapeados * 2 >= h.count
+    }
+
+    /// Decodifica según BOM (UTF-16 LE/BE, típico de exports de Windows/Excel) y,
+    /// si no, prueba UTF-8 y finalmente Latin-1 (Excel español).
     private func decodificar(_ datos: Data) -> String {
-        if let utf8 = String(data: datos, encoding: .utf8) { return utf8 }
+        if datos.starts(with: [0xFF, 0xFE]) || datos.starts(with: [0xFE, 0xFF]) {
+            if let u16 = String(data: datos, encoding: .utf16) { return u16 }
+        }
+        if datos.starts(with: [0xEF, 0xBB, 0xBF]) || String(data: datos, encoding: .utf8) != nil {
+            if let u8 = String(data: datos, encoding: .utf8) { return u8 }
+        }
         return String(data: datos, encoding: .isoLatin1) ?? ""
     }
 
