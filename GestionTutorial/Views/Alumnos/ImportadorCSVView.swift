@@ -20,6 +20,7 @@ struct ImportadorCSVView: View {
     @State private var textoPegado = ""
     @State private var separadorForzado: SeparadorOpcion = .auto
     @State private var arrastrando = false
+    @State private var mostrarPegar = false
     @State private var errorArchivo: String?
 
     // Datos derivados del parseo (recalculados al cambiar texto/separador).
@@ -157,50 +158,79 @@ struct ImportadorCSVView: View {
     // MARK: - Panel de entrada
 
     private var panelEntrada: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Datos de origen").font(.headline)
-                Spacer()
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Datos de origen").font(.headline)
+
+            zonaSoltar
+
+            DisclosureGroup(isExpanded: $mostrarPegar) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Picker("Separador", selection: $separadorForzado) {
+                            ForEach(SeparadorOpcion.allCases) { Text($0.rawValue).tag($0) }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(maxWidth: 200)
+                        if separadorForzado == .auto, !textoPegado.isEmpty {
+                            Text("detectado: « \(String(separadorEfectivo)) »")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+                    TextEditor(text: $textoPegado)
+                        .font(.system(.body, design: .monospaced))
+                        .frame(height: 130)
+                        .overlay(alignment: .topLeading) {
+                            if textoPegado.isEmpty {
+                                Text("\"Apellidos, Nombre\",Fecha,…\n\"Pérez García, Ana\",15/06/2010,…")
+                                    .foregroundStyle(.tertiary)
+                                    .font(.system(.body, design: .monospaced))
+                                    .padding(8)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+                        .clipShape(.rect(cornerRadius: 8))
+                }
+                .padding(.top, 4)
+            } label: {
+                Text("O pegar el texto de un CSV").font(.subheadline)
+            }
+        }
+        .padding(16)
+    }
+
+    /// Zona grande de arrastrar y soltar (también abre el selector al pulsar).
+    private var zonaSoltar: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(arrastrando ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06))
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(arrastrando ? Color.accentColor : Color.secondary.opacity(0.35),
+                              style: StrokeStyle(lineWidth: 2, dash: [8]))
+
+            VStack(spacing: 12) {
+                Image(systemName: "tray.and.arrow.down.fill")
+                    .font(.system(size: 46))
+                    .foregroundStyle(arrastrando ? Color.accentColor : .secondary)
+                    .symbolEffect(.bounce, value: arrastrando)
+                VStack(spacing: 4) {
+                    Text("Arrastra aquí tus CSV").font(.title3.bold())
+                    Text("Se detectan y fusionan por alumno automáticamente")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
                 Button {
                     mostrarSelectorMultiple = true
                 } label: {
                     Label("Abrir CSV…", systemImage: "folder")
                 }
-                .buttonStyle(.bordered)
-                .help("Abre uno o varios CSV; se fusionan por alumno (DNI o nombre)")
+                .buttonStyle(.borderedProminent)
             }
-            HStack {
-                Picker("Separador", selection: $separadorForzado) {
-                    ForEach(SeparadorOpcion.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.menu)
-                .frame(maxWidth: 220)
-                if separadorForzado == .auto, !textoPegado.isEmpty {
-                    Text("detectado: « \(String(separadorEfectivo)) »")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-            }
-            TextEditor(text: $textoPegado)
-                .font(.system(.body, design: .monospaced))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay(alignment: .topLeading) {
-                    if textoPegado.isEmpty {
-                        Text("Arrastra aquí tus CSV, o pégalos.\n\n\"Apellidos, Nombre\",Fecha,…\n\"Pérez García, Ana\",15/06/2010,…")
-                            .foregroundStyle(.tertiary)
-                            .font(.system(.body, design: .monospaced))
-                            .padding(8)
-                            .allowsHitTesting(false)
-                    }
-                }
-                .clipShape(.rect(cornerRadius: 10))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(arrastrando ? Color.accentColor : Color.clear,
-                                      style: StrokeStyle(lineWidth: 2, dash: [6]))
-                }
+            .padding(24)
         }
-        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(RoundedRectangle(cornerRadius: 16))
+        .onTapGesture { mostrarSelectorMultiple = true }
         .dropDestination(for: URL.self) { urls, _ in
             cargarURLs(urls)
             return true
