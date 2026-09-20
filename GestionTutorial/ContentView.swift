@@ -37,7 +37,7 @@ struct ContentView: View {
                 Label(seccion.rawValue, systemImage: seccion.simbolo)
                     .tag(seccion)
             }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 260)
+            .navigationSplitViewColumnWidth(min: 170, ideal: 185, max: 220)
             .navigationTitle("1SMX-A")
         } content: {
             // Columna central: lista según sección

@@ -91,7 +91,7 @@ struct AlumnosListView: View {
         }
         .navigationTitle("Alumnos")
         .navigationSubtitle(subtitulo)
-        .navigationSplitViewColumnWidth(min: 280, ideal: 340, max: 440)
+        .navigationSplitViewColumnWidth(min: 300, ideal: 360, max: 460)
         .searchable(text: $busqueda, prompt: "Buscar")
         .searchSuggestions {
             if busqueda.isEmpty {
