@@ -115,7 +115,7 @@ private struct AjustesAcercaDe: View {
             }
             .disabled(gestor.comprobando)
 
-            Text("Hecho por MVRX Studio\u{00AE}")
+            Text("MvrxStudio\u{00AE}")
                 .font(.subheadline)
 
             Divider().padding(.horizontal, 40)
@@ -128,7 +128,7 @@ private struct AjustesAcercaDe: View {
                     .font(.callout)
             }
 
-            Text("Tu gestor de confianza · Datos locales, sin nube.")
+            Text("© 2026 MvrxStudio · Todos los derechos reservados.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
