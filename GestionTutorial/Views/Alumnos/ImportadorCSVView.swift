@@ -22,6 +22,8 @@ struct ImportadorCSVView: View {
     @State private var arrastrando = false
     @State private var mostrarPegar = true
     @State private var errorArchivo: String?
+    @State private var fotos: FotosPerfil?
+    @State private var nombreZipFotos: String?
 
     // Datos derivados del parseo (recalculados al cambiar texto/separador).
     @State private var cabeceras: [String] = []
@@ -122,7 +124,7 @@ struct ImportadorCSVView: View {
         .onChange(of: separadorForzado) { _, _ in reanalizar() }
         .fileImporter(
             isPresented: $mostrarSelectorMultiple,
-            allowedContentTypes: [.commaSeparatedText, .plainText, .text],
+            allowedContentTypes: [.commaSeparatedText, .plainText, .text, .zip],
             allowsMultipleSelection: true
         ) { cargarVarios($0) }
         .alert("No se pudo leer el archivo", isPresented: .constant(errorArchivo != nil)) {
@@ -237,7 +239,7 @@ struct ImportadorCSVView: View {
                     .foregroundStyle(arrastrando ? Color.accentColor : .secondary)
                     .symbolEffect(.bounce, value: arrastrando)
                 VStack(spacing: 4) {
-                    Text("Arrastra aquí tus CSV").font(.title3.bold())
+                    Text("Arrastra aquí tus CSV y el ZIP de fotos").font(.title3.bold())
                     Text("Se detectan y fusionan por alumno automáticamente")
                         .font(.caption).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -340,6 +342,24 @@ struct ImportadorCSVView: View {
                         }
                         Spacer()
                         Text("\(a.numFilas) fila(s)").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                if let fotos, let nombreZipFotos {
+                    HStack(spacing: 8) {
+                        Image(systemName: "photo.stack.fill").foregroundStyle(.blue)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(nombreZipFotos).fontWeight(.medium).lineLimit(1)
+                            Text("Fotos de perfil · \(fotosAsignadas) de \(fotos.total) asignadas")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button {
+                            self.fotos = nil
+                            self.nombreZipFotos = nil
+                        } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
                     }
                 }
             }
@@ -487,10 +507,25 @@ struct ImportadorCSVView: View {
     /// auto-mapea (por cabecera si la detecta, o por el valor de sus columnas) y
     /// se acumula; la fusión por alumno es automática.
     private func cargarURLs(_ urls: [URL]) {
+        let zips = urls.filter { $0.pathExtension.lowercased() == "zip" }
         let csvs = urls.filter { ["csv", "txt", "tsv", "tab"].contains($0.pathExtension.lowercased()) || $0.pathExtension.isEmpty }
-        guard !csvs.isEmpty else {
-            errorArchivo = "Arrastra archivos CSV (.csv, .txt)."
+        guard !csvs.isEmpty || !zips.isEmpty else {
+            errorArchivo = "Arrastra CSV (.csv, .txt) o el ZIP de fotos."
             return
+        }
+
+        // ZIP de fotos de perfil (carpeta con .jpg + manifest.csv).
+        for url in zips {
+            let acceso = url.startAccessingSecurityScopedResource()
+            defer { if acceso { url.stopAccessingSecurityScopedResource() } }
+            guard let datos = try? Data(contentsOf: url) else { continue }
+            let fp = FotosPerfil.desdeZip(datos)
+            if fp.total > 0 {
+                fotos = fp
+                nombreZipFotos = url.lastPathComponent
+            } else {
+                errorArchivo = "El ZIP no contiene fotos con manifest.csv."
+            }
         }
 
         var cargados: [ArchivoCSV] = []
@@ -516,7 +551,8 @@ struct ImportadorCSVView: View {
         }
 
         guard !cargados.isEmpty else {
-            errorArchivo = "Los CSV están vacíos o no se pudieron leer."
+            // Si solo se soltó el ZIP de fotos, no es un error.
+            if !csvs.isEmpty { errorArchivo = "Los CSV están vacíos o no se pudieron leer." }
             return
         }
 
@@ -553,9 +589,19 @@ struct ImportadorCSVView: View {
 
     private func importar(_ filas: [AlumnoImportado]) {
         for fila in filas {
-            modelContext.insert(fila.aAlumno())
+            let alumno = fila.aAlumno()
+            if let foto = fotos?.foto(apellidos: fila.apellidos, nombre: fila.nombre) {
+                alumno.foto = foto
+            }
+            modelContext.insert(alumno)
         }
         dismiss()
+    }
+
+    /// Nº de alumnos nuevos que recibirán foto del ZIP.
+    private var fotosAsignadas: Int {
+        guard let fotos else { return 0 }
+        return nuevos.filter { fotos.foto(apellidos: $0.apellidos, nombre: $0.nombre) != nil }.count
     }
 
     private func normalizarDNI(_ s: String) -> String {
