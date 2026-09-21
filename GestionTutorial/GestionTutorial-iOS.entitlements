@@ -2,13 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>com.apple.developer.icloud-container-identifiers</key>
-	<array>
-		<string>iCloud.com.monlau.GestionTutorial</string>
-	</array>
-	<key>com.apple.developer.icloud-services</key>
-	<array>
-		<string>CloudKit</string>
-	</array>
+	<!--
+	  Sin iCloud: permite firmar en dispositivo con cuenta gratuita (los datos
+	  quedan locales). El código usa cloudKitDatabase: .automatic con fallback a
+	  local, así que sin este entitlement la app funciona en local.
+
+	  Para activar la sincronización cifrada con iCloud (requiere Apple Developer
+	  Program de pago): en Xcode → target → Signing & Capabilities → + Capability
+	  → iCloud → marca CloudKit y el contenedor iCloud.com.monlau.GestionTutorial.
+	  Eso reañade aquí las claves icloud-container-identifiers e icloud-services.
+	-->
 </dict>
 </plist>

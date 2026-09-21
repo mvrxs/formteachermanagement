@@ -265,8 +265,8 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "GestionTutorial/GestionTutorial-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "GestionTutorial/GestionTutorial-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = GestionTutorial/GestionTutorial.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = WMZNJ749WJ;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
@@ -309,8 +309,8 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "GestionTutorial/GestionTutorial-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "GestionTutorial/GestionTutorial-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = GestionTutorial/GestionTutorial.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = WMZNJ749WJ;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
