@@ -188,6 +188,29 @@ struct ImportadorCSVView: View {
 
             zonaSoltar
 
+            if let fotos, let nombreZipFotos {
+                HStack(spacing: 8) {
+                    Image(systemName: "photo.stack.fill").foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(nombreZipFotos).font(.callout).fontWeight(.medium).lineLimit(1)
+                        Text(nuevos.isEmpty
+                             ? "\(fotos.total) fotos cargadas · añade los CSV para asignarlas"
+                             : "\(fotos.total) fotos cargadas · \(fotosAsignadas) asignadas")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button {
+                        self.fotos = nil
+                        self.nombreZipFotos = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.borderless)
+                }
+                .padding(10)
+                .background(.blue.opacity(0.08), in: .rect(cornerRadius: 8))
+            }
+
             DisclosureGroup(isExpanded: $mostrarPegar) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
@@ -342,24 +365,6 @@ struct ImportadorCSVView: View {
                         }
                         Spacer()
                         Text("\(a.numFilas) fila(s)").font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                if let fotos, let nombreZipFotos {
-                    HStack(spacing: 8) {
-                        Image(systemName: "photo.stack.fill").foregroundStyle(.blue)
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(nombreZipFotos).fontWeight(.medium).lineLimit(1)
-                            Text("Fotos de perfil · \(fotosAsignadas) de \(fotos.total) asignadas")
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button {
-                            self.fotos = nil
-                            self.nombreZipFotos = nil
-                        } label: {
-                            Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.borderless)
                     }
                 }
             }
@@ -518,13 +523,17 @@ struct ImportadorCSVView: View {
         for url in zips {
             let acceso = url.startAccessingSecurityScopedResource()
             defer { if acceso { url.stopAccessingSecurityScopedResource() } }
-            guard let datos = try? Data(contentsOf: url) else { continue }
-            let fp = FotosPerfil.desdeZip(datos)
-            if fp.total > 0 {
-                fotos = fp
-                nombreZipFotos = url.lastPathComponent
-            } else {
-                errorArchivo = "El ZIP no contiene fotos con manifest.csv."
+            do {
+                let datos = try Data(contentsOf: url)
+                let fp = FotosPerfil.desdeZip(datos)
+                if fp.total > 0 {
+                    fotos = fp
+                    nombreZipFotos = url.lastPathComponent
+                } else {
+                    errorArchivo = "El ZIP no contiene fotos reconocibles (falta manifest.csv o los .jpg)."
+                }
+            } catch {
+                errorArchivo = "No se pudo leer el ZIP: \(error.localizedDescription)"
             }
         }
 
