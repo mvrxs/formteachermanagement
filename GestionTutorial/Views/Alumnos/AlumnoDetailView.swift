@@ -17,6 +17,7 @@ struct AlumnoDetailView: View {
     @State private var necesidadEnEdicion: NecesidadEspecial?
     @State private var mostrarSelectorFoto = false
     @State private var errorFoto: String?
+    @State private var mostrarFotoGrande = false
 
     /// Binding puente para la fecha de nacimiento opcional.
     private var tieneFechaNacimiento: Binding<Bool> {
@@ -68,6 +69,35 @@ struct AlumnoDetailView: View {
         } message: {
             Text(errorFoto ?? "")
         }
+        .overlay {
+            if mostrarFotoGrande, let foto = alumno.foto, let ns = NSImage(data: foto) {
+                fotoAmpliada(Image(nsImage: ns))
+            }
+        }
+    }
+
+    /// Vista ampliada de la foto, centrada sobre un fondo atenuado. Tamaño moderado.
+    private func fotoAmpliada(_ imagen: Image) -> some View {
+        ZStack {
+            Rectangle()
+                .fill(.black.opacity(0.55))
+                .ignoresSafeArea()
+                .onTapGesture { cerrarFotoGrande() }
+            imagen
+                .resizable()
+                .scaledToFill()
+                .frame(width: 300, height: 300)
+                .clipShape(.rect(cornerRadius: 20))
+                .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(.white.opacity(0.15)))
+                .shadow(radius: 24, y: 10)
+                .onTapGesture { cerrarFotoGrande() }
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
+        }
+        .transition(.opacity)
+    }
+
+    private func cerrarFotoGrande() {
+        withAnimation(.easeOut(duration: 0.2)) { mostrarFotoGrande = false }
     }
 
     // MARK: - Cabecera
@@ -91,8 +121,26 @@ struct AlumnoDetailView: View {
         }
     }
 
-    /// Avatar con menú para elegir, cambiar o quitar la foto.
+    /// Avatar: al pulsar la foto se amplía; el botón de cámara abre el menú para
+    /// cambiar o quitar la foto (o añadirla si no hay).
     private var avatarConMenu: some View {
+        AvatarAlumno(foto: alumno.foto, tamano: 64)
+            .overlay(alignment: .bottomTrailing) { menuFoto }
+            .contentShape(.circle)
+            .onTapGesture {
+                if alumno.foto != nil {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        mostrarFotoGrande = true
+                    }
+                } else {
+                    mostrarSelectorFoto = true
+                }
+            }
+            .help(alumno.foto == nil ? "Añadir foto del alumno" : "Ver la foto en grande")
+    }
+
+    /// Menú de cámara para gestionar la foto.
+    private var menuFoto: some View {
         Menu {
             Button {
                 mostrarSelectorFoto = true
@@ -107,17 +155,15 @@ struct AlumnoDetailView: View {
                 }
             }
         } label: {
-            AvatarAlumno(foto: alumno.foto, tamano: 64)
-                .overlay(alignment: .bottomTrailing) {
-                    Image(systemName: "camera.circle.fill")
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, .tint)
-                        .font(.title3)
-                        .background(.background, in: .circle)
-                }
+            Image(systemName: "camera.circle.fill")
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(.white, .tint)
+                .font(.title3)
+                .background(.background, in: .circle)
         }
         .buttonStyle(.plain)
-        .help("Añadir o cambiar la foto del alumno")
+        .menuIndicator(.hidden)
+        .fixedSize()
     }
 
     private func cargarFoto(_ resultado: Result<[URL], Error>) {
