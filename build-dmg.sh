@@ -11,8 +11,8 @@ set -euo pipefail
 # --- Configuración ---
 PROJECT="GestionTutorial.xcodeproj"
 SCHEME="GestionTutorial"
-APP_NAME="GestionTutorial"          # nombre del .app que produce Xcode
-VOL_NAME="Form Teacher Manager"     # nombre visible del volumen/instalador
+APP_NAME="TutorHub"                 # nombre del .app que produce Xcode (PRODUCT_NAME)
+VOL_NAME="TutorHub"                 # nombre visible del volumen/instalador
 DERIVED="build_release"
 STAGE="dmg_stage"
 DMG="${VOL_NAME}.dmg"

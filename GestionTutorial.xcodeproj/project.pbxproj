@@ -267,7 +267,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Form Teacher Manager";
+				INFOPLIST_KEY_CFBundleDisplayName = TutorHub;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Para sincronizar las tutorias con tu Calendario de macOS.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Para sincronizar las tutorias con tu Calendario de macOS.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -277,7 +277,7 @@
 				);
 				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.monlau.GestionTutorial;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = TutorHub;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -302,7 +302,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Form Teacher Manager";
+				INFOPLIST_KEY_CFBundleDisplayName = TutorHub;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Para sincronizar las tutorias con tu Calendario de macOS.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Para sincronizar las tutorias con tu Calendario de macOS.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -312,7 +312,7 @@
 				);
 				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.monlau.GestionTutorial;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = TutorHub;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
