@@ -8,6 +8,7 @@
 //
 
 import Foundation
+import ImageIO
 
 enum ExportadorPowerPoint {
 
@@ -28,8 +29,10 @@ enum ExportadorPowerPoint {
         // Diapositiva 1 = portada; 2..N+1 = ficha por alumno.
         let numSlides = alumnos.count + 1
 
+        let hayFotos = alumnos.contains { $0.foto != nil }
+
         // --- Partes fijas del paquete ---
-        zip.agregar("[Content_Types].xml", contentTypes(numSlides: numSlides, hayLogo: logoPNG != nil).datosXML)
+        zip.agregar("[Content_Types].xml", contentTypes(numSlides: numSlides, hayLogo: logoPNG != nil, hayFotos: hayFotos).datosXML)
         zip.agregar("_rels/.rels", relsRaiz.datosXML)
         zip.agregar("ppt/presentation.xml", presentation(numSlides: numSlides).datosXML)
         zip.agregar("ppt/_rels/presentation.xml.rels", presentationRels(numSlides: numSlides).datosXML)
@@ -51,8 +54,17 @@ enum ExportadorPowerPoint {
         // --- Ficha por alumno ---
         for (i, alumno) in alumnos.enumerated() {
             let n = i + 2
-            zip.agregar("ppt/slides/slide\(n).xml", xmlFichaAlumno(alumno, hayLogo: logoPNG != nil).datosXML)
-            zip.agregar("ppt/slides/_rels/slide\(n).xml.rels", slideRels(hayLogo: logoPNG != nil).datosXML)
+            var fotoArchivo: String?
+            var fotoAspecto: Double?
+            if let foto = alumno.foto {
+                fotoArchivo = "foto\(n).jpg"
+                zip.agregar("ppt/media/\(fotoArchivo!)", foto)
+                fotoAspecto = aspecto(foto)
+            }
+            zip.agregar("ppt/slides/slide\(n).xml",
+                        xmlFichaAlumno(alumno, hayLogo: logoPNG != nil, fotoAspecto: fotoAspecto).datosXML)
+            zip.agregar("ppt/slides/_rels/slide\(n).xml.rels",
+                        slideRels(hayLogo: logoPNG != nil, fotoArchivo: fotoArchivo).datosXML)
         }
 
         return zip.finalizar()
@@ -99,7 +111,7 @@ enum ExportadorPowerPoint {
 
     // MARK: - Ficha de alumno
 
-    private static func xmlFichaAlumno(_ a: Alumno, hayLogo: Bool) -> String {
+    private static func xmlFichaAlumno(_ a: Alumno, hayLogo: Bool, fotoAspecto: Double?) -> String {
         var formas = ""
 
         // Cabecera azul con el nombre.
@@ -122,10 +134,25 @@ enum ExportadorPowerPoint {
             siguienteId += 1
         }
 
+        // Foto del alumno a la derecha (si tiene), con proporción preservada.
+        var anchoCuerpo = anchoSlide - 1040000
+        if let aspecto = fotoAspecto {
+            let maxW = 2500000, maxH = 3000000
+            var w = maxW
+            var h = Int(Double(maxW) / aspecto)
+            if h > maxH { h = maxH; w = Int(Double(maxH) * aspecto) }
+            let px = anchoSlide - 460000 - w
+            let py = 1500000
+            formas += imagen(id: siguienteId, x: px, y: py, cx: w, cy: h,
+                             rId: "rIdFoto", name: "Foto", redondeada: true, borde: true)
+            siguienteId += 1
+            anchoCuerpo = px - 520000 - 280000   // deja hueco para la foto
+        }
+
         // Cuerpo con los datos.
         let parrafos = parrafosFicha(a)
         formas += cuadroTexto(
-            id: siguienteId, x: 520000, y: 1420000, cx: anchoSlide - 1040000, cy: altoSlide - 1720000,
+            id: siguienteId, x: 520000, y: 1420000, cx: anchoCuerpo, cy: altoSlide - 1720000,
             parrafos: parrafos, autoAjuste: true
         )
 
@@ -280,13 +307,24 @@ enum ExportadorPowerPoint {
         """
     }
 
-    private static func imagen(id: Int, x: Int, y: Int, cx: Int, cy: Int) -> String {
-        """
-        <p:pic><p:nvPicPr><p:cNvPr id="\(id)" name="Logo"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>\
-        <p:blipFill><a:blip r:embed="rIdImg"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>\
+    private static func imagen(id: Int, x: Int, y: Int, cx: Int, cy: Int, rId: String = "rIdImg", name: String = "Logo", redondeada: Bool = false, borde: Bool = false) -> String {
+        let geom = redondeada ? "roundRect" : "rect"
+        let ln = borde ? "<a:ln w=\"12700\"><a:solidFill><a:srgbClr val=\"\(azul)\"/></a:solidFill></a:ln>" : ""
+        return """
+        <p:pic><p:nvPicPr><p:cNvPr id="\(id)" name="\(name)"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>\
+        <p:blipFill><a:blip r:embed="\(rId)"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>\
         <p:spPr><a:xfrm><a:off x="\(x)" y="\(y)"/><a:ext cx="\(cx)" cy="\(cy)"/></a:xfrm>\
-        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>
+        <a:prstGeom prst="\(geom)"><a:avLst/></a:prstGeom>\(ln)</p:spPr></p:pic>
         """
+    }
+
+    /// Proporción ancho/alto de una imagen (para no deformarla en la diapositiva).
+    private static func aspecto(_ datos: Data) -> Double? {
+        guard let src = CGImageSourceCreateWithData(datos as CFData, nil),
+              let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
+              let w = props[kCGImagePropertyPixelWidth] as? Double,
+              let h = props[kCGImagePropertyPixelHeight] as? Double, h > 0 else { return nil }
+        return w / h
     }
 
     private static func cuadroTexto(id: Int, x: Int, y: Int, cx: Int, cy: Int, parrafos: [String], alineacion: String = "l", centradoVertical: Bool = false, autoAjuste: Bool = false) -> String {
@@ -318,17 +356,18 @@ enum ExportadorPowerPoint {
 
     // MARK: - Partes fijas del paquete
 
-    private static func contentTypes(numSlides: Int, hayLogo: Bool) -> String {
+    private static func contentTypes(numSlides: Int, hayLogo: Bool, hayFotos: Bool) -> String {
         var overrides = ""
         for n in 1...numSlides {
             overrides += "<Override PartName=\"/ppt/slides/slide\(n).xml\" ContentType=\"application/vnd.openxmlformats-officedocument.presentationml.slide+xml\"/>"
         }
         let png = hayLogo ? "<Default Extension=\"png\" ContentType=\"image/png\"/>" : ""
+        let jpg = hayFotos ? "<Default Extension=\"jpg\" ContentType=\"image/jpeg\"/>" : ""
         return """
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">\
         <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>\
-        <Default Extension="xml" ContentType="application/xml"/>\(png)\
+        <Default Extension="xml" ContentType="application/xml"/>\(png)\(jpg)\
         <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>\
         <Override PartName="/ppt/presProps.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presProps+xml"/>\
         <Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>\
@@ -374,10 +413,13 @@ enum ExportadorPowerPoint {
         """
     }
 
-    private static func slideRels(hayLogo: Bool) -> String {
+    private static func slideRels(hayLogo: Bool, fotoArchivo: String? = nil) -> String {
         var rels = "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout\" Target=\"../slideLayouts/slideLayout1.xml\"/>"
         if hayLogo {
             rels += "<Relationship Id=\"rIdImg\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"../media/image1.png\"/>"
+        }
+        if let fotoArchivo {
+            rels += "<Relationship Id=\"rIdFoto\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"../media/\(fotoArchivo)\"/>"
         }
         return """
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>

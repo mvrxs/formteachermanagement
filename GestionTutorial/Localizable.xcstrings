@@ -486,6 +486,9 @@
         }
       }
     },
+    "Añadir foto del alumno" : {
+
+    },
     "Añadir foto…" : {
       "localizations" : {
         "ca" : {
@@ -546,6 +549,7 @@
       }
     },
     "Añadir o cambiar la foto del alumno" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ca" : {
           "stringUnit" : {
@@ -3408,6 +3412,9 @@
       }
     },
     "Varios CSV (automático)" : {
+
+    },
+    "Ver la foto en grande" : {
 
     },
     "Versión %@" : {
