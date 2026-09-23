@@ -14,6 +14,12 @@ enum ImagenUtil {
         return jpegRedimensionado(imagen: imagen, maxLado: maxLado, calidad: calidad)
     }
 
+    /// Redimensiona una imagen desde sus bytes (JPEG/PNG…) y devuelve JPEG.
+    static func jpegRedimensionado(datos: Data, maxLado: CGFloat = 512, calidad: CGFloat = 0.8) -> Data? {
+        guard let imagen = NSImage(data: datos) else { return nil }
+        return jpegRedimensionado(imagen: imagen, maxLado: maxLado, calidad: calidad)
+    }
+
     /// Redimensiona una NSImage manteniendo proporción y la codifica como JPEG.
     static func jpegRedimensionado(imagen: NSImage, maxLado: CGFloat = 512, calidad: CGFloat = 0.8) -> Data? {
         let original = imagen.size
